@@ -20,7 +20,7 @@ module.exports = {
         }
       },
       {
-        version: "0.8.0",
+        version: "0.8.15",
         settings: {
           optimizer: {
             enabled: true,
