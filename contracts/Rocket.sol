@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import {IConnextHandler} from "@connext/nxtp-contracts/contracts/core/connext/interfaces/IConnextHandler.sol";
 import {CallParams, XCallArgs} from "@connext/nxtp-contracts/contracts/core/connext/libraries/LibConnextStorage.sol";
 import {ICallback} from "@connext/nxtp-contracts/contracts/core/promise/interfaces/ICallback.sol";
+import {IExecutor} from "@connext/nxtp-contracts/contracts/core/connext/interfaces/IExecutor.sol";
+import {LibCrossDomainProperty} from "@connext/nxtp-contracts/contracts/core/connext/libraries/LibCrossDomainProperty.sol";
 
 contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
     using Counters for Counters.Counter;
@@ -19,8 +21,17 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
     Counters.Counter public _tokenIdCounter;
     bool _origin;
 
-    IConnextHandler public immutable connext;
-    address public immutable promiseRouter;
+    IConnextHandler public connext;
+    IExecutor public executor;
+    address public promiseRouter;
+
+    event BridgeStarted(
+        uint256 chainId, 
+        address contractAddress, 
+        uint256 tokenId, 
+        address owner,
+        string uri 
+    );
 
     modifier onlyPromiseRouter () {
         require(
@@ -37,8 +48,12 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(METADATA_ROLE, msg.sender);
-        connext = _connext;
-        promiseRouter = _promiseRouter;
+        if (address(_connext) != address(0)) {
+            connext = _connext;
+            promiseRouter = _promiseRouter;
+            executor = _connext.executor();
+            _grantRole(MINTER_ROLE, address(executor));
+        }
     }
 
     function setOrigin() public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -53,6 +68,9 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
     }
 
     function bridgeArrive(address to, uint256 tokenId, string memory uri) public onlyRole(MINTER_ROLE) {
+        if (msg.sender == address(executor)) {
+            // TODO: additional security checks for orig domain + contract
+        }
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
     }
@@ -60,9 +78,10 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
     function bridgeDepart(
         uint32 originDomain,
         uint32 destinationDomain,
+        address destinationContract,
         uint256 tokenId,
         string calldata uri
-    ) public {
+    ) external payable {
         require(ownerOf(tokenId) == msg.sender, "not your rocket");
         _burn(tokenId);
         if ( destinationDomain == 1735353714 || destinationDomain == 1735356532 ) {
@@ -75,7 +94,7 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
             );
 
             CallParams memory callParams = CallParams({
-                to: address(this),
+                to: destinationContract,
                 callData: callData,
                 originDomain: originDomain,
                 destinationDomain: destinationDomain,
@@ -98,9 +117,9 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
 
             connext.xcall(xcallArgs);
         } else {
-            // TODO: non-connext bridge??
+            // emit event for relayer to process
+            emit BridgeStarted(uint256(destinationDomain), destinationContract, tokenId, msg.sender, uri);
         }
-        // TODO: emit event for Bridge initiated?
     }
 
     event BridgeConfirmed(bytes32 transferId, bool success, uint32 originDomain, uint32 destinationDomain, uint256 tokenId);
