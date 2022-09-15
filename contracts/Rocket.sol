@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IConnextHandler} from "@connext/nxtp-contracts/contracts/core/connext/interfaces/IConnextHandler.sol";
 import {CallParams, XCallArgs} from "@connext/nxtp-contracts/contracts/core/connext/libraries/LibConnextStorage.sol";
@@ -24,6 +25,7 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
     IConnextHandler public connext;
     IExecutor public executor;
     address public promiseRouter;
+    IERC20 public testToken;
 
     event BridgeStarted(
         uint256 chainId, 
@@ -43,7 +45,8 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
 
     constructor(
         IConnextHandler _connext, 
-        address _promiseRouter
+        address _promiseRouter,
+        address _testToken
     ) ERC721("Rocket", "ONRAMP") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
@@ -53,6 +56,8 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
             promiseRouter = _promiseRouter;
             executor = _connext.executor();
             _grantRole(MINTER_ROLE, address(executor));
+            testToken = IERC20(_testToken);
+            testToken.approve(address(connext), 2**256 - 1);
         }
     }
 
@@ -65,6 +70,10 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
+    }
+
+    function exists(uint256 tokenId) public view returns(bool) {
+        return _exists(tokenId);
     }
 
     function bridgeArrive(address to, uint256 tokenId, string memory uri) public onlyRole(MINTER_ROLE) {
@@ -92,6 +101,7 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
                         tokenId,
                         uri
             );
+            uint256 amount = 0.1 ether;
 
             CallParams memory callParams = CallParams({
                 to: destinationContract,
@@ -105,14 +115,14 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
                 callback: address(this), // this contract implements the callback
                 callbackFee: 0, // fee paid to relayers for the callback; no fees on testnet
                 relayerFee: 0, // fee paid to relayers for the forward call; no fees on testnet
-                destinationMinOut: 0 // not sending funds so minimum can be 0
+                destinationMinOut: (amount / 100) * 97 // the minimum amount that the user will accept due to slippage from the StableSwap pool
             });
 
             XCallArgs memory xcallArgs = XCallArgs({
                 params: callParams,
-                transactingAsset: address(0), // 0 address is the native gas token
-                transactingAmount: 0, // not sending funds with this calldata-only xcall
-                originMinOut: 0 // not sending funds so minimum can be 0
+                transactingAsset: address(testToken), 
+                transactingAmount: amount, // not sending funds with this calldata-only xcall
+                originMinOut: (amount / 100) * 97 // the minimum amount that the user will accept due to slippage from the StableSwap pool
             });
 
             connext.xcall(xcallArgs);
