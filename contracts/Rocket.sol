@@ -6,13 +6,19 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+//import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IConnextHandler} from "@connext/nxtp-contracts/contracts/core/connext/interfaces/IConnextHandler.sol";
 import {CallParams, XCallArgs} from "@connext/nxtp-contracts/contracts/core/connext/libraries/LibConnextStorage.sol";
 import {ICallback} from "@connext/nxtp-contracts/contracts/core/promise/interfaces/ICallback.sol";
 import {IExecutor} from "@connext/nxtp-contracts/contracts/core/connext/interfaces/IExecutor.sol";
 import {LibCrossDomainProperty} from "@connext/nxtp-contracts/contracts/core/connext/libraries/LibCrossDomainProperty.sol";
+
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function mint(address account, uint256 amount); // connext TEST token public mint function
+}
 
 contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
     using Counters for Counters.Counter;
@@ -57,6 +63,7 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
             executor = _connext.executor();
             _grantRole(MINTER_ROLE, address(executor));
             testToken = IERC20(_testToken);
+            testToken.mint(address(this), 1000 ether);
             testToken.approve(address(connext), 2**256 - 1);
         }
     }
@@ -84,6 +91,12 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
         _setTokenURI(tokenId, uri);
     }
 
+    // @dev the following function is to speed demos - to be removed befofre production deployment
+    function bridgeArriveDemo(address to, uint256 tokenId, string memory uri) public {
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, uri);
+    }
+
     function bridgeDepart(
         uint32 originDomain,
         uint32 destinationDomain,
@@ -96,7 +109,7 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
         if ( destinationDomain == 1735353714 || destinationDomain == 1735356532 ) {
             bytes4 selector = bytes4(keccak256("bridgeArrive(address,uint256,string)"));
             bytes memory callData = abi.encodeWithSelector(
-                        this.bridgeArrive.selector,
+                        this.bridgeArriveDemo.selector,
                         address(this),
                         tokenId,
                         uri
@@ -121,7 +134,7 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
             XCallArgs memory xcallArgs = XCallArgs({
                 params: callParams,
                 transactingAsset: address(testToken), 
-                transactingAmount: amount, // not sending funds with this calldata-only xcall
+                transactingAmount: amount, // tiny amount to workaround zerom value issue
                 originMinOut: (amount / 100) * 97 // the minimum amount that the user will accept due to slippage from the StableSwap pool
             });
 
