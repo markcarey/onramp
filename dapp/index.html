@@ -1,55 +1,14 @@
 <html>
     <head>
-        <script src="https://unpkg.com/merge-images"></script>
+        
     </head>
 
     <body>
 
         <img src="https://degendogs.club/images/0.png" />
 
-        <script>
-            var w = 173;
-            var h = 173;
-            var nftURL = 'https://degendogs.club/images/0.png';
-            //nftURL = 'https://img.seadn.io/files/a4a26c85eee22e24551483b21d53f092.png?fit=max&w=160';
-            const nft = new Image(100, 100);
-            nft.crossOrigin = 'Anonymous';
-            nft.src = 'https://api.codetabs.com/v1/proxy/?quest=' + nftURL;
-
-            nft.onload = function () {
-                var canvas = document.createElement('canvas'),
-                    ctx = canvas.getContext('2d');
-
-                canvas.height = h;
-                canvas.width = w;
-                ctx.drawImage(nft, 0, 0, w, h);
-
-                // Unfortunately, we cannot keep the original image type, so all images will be converted to PNG
-                // For this reason, we cannot get the original Base64 string
-                var uri = canvas.toDataURL('image/jpg'),
-                    base64 = uri.replace(/^data:image\/jpg;base64,/, "");
-
-                //console.log(b64); //-> "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg=="
-                mergeImages(
-                [
-                    { src: uri, x: 295, y: 44 },
-                    { src: 'images/levels/1.png', x: 0, y: 0 }
-                ],
-                {
-                    crossOrigin: "Anonymous"
-                }
-            )
-                .then(b64 => document.querySelector('img').src = b64); 
-    };
-
-            
-
-
-
-//document.body.appendChild(nft);
-
-
-        </script>
+        <script src="https://unpkg.com/merge-images"></script>
+        <script src="/js/dapp.js"></script>
 
     </body>
 </html>
