@@ -1,6 +1,7 @@
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 
 var addr = {};
+//var chain = "goerli";
 var chain = "optimism-goerli";
 
 if (chain == "goerli") {

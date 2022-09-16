@@ -32,13 +32,29 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
     IExecutor public executor;
     address public promiseRouter;
     IERC20 public testToken;
+    address public originContract; // the address of the source contract
+    uint32 public originDomain; // the origin Domain ID
 
-    event BridgeStarted(
+    event Launched(
         uint256 chainId, 
         address contractAddress, 
         uint256 tokenId, 
         address owner,
         string uri 
+    );
+    event Landed(
+        uint256 chainId, 
+        address contractAddress, 
+        uint256 tokenId, 
+        address owner,
+        string uri 
+    );
+    event BridgeConfirmed(
+        bytes32 transferId, 
+        bool success, 
+        uint32 originDomain, 
+        uint32 destinationDomain, 
+        uint256 tokenId
     );
 
     modifier onlyPromiseRouter () {
@@ -71,6 +87,12 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
     function setOrigin() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _origin = true;
     }
+    function setOriginContract(address _contract) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        originContract = _contract;
+    }
+    function setOriginDomain(uint32 _domain) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        originDomain = _domain;
+    }
 
     function selfMint(address to) public {
         require(_origin == true, "public mint only on origin chain");
@@ -85,20 +107,26 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
 
     function bridgeArrive(address to, uint256 tokenId, string memory uri) public onlyRole(MINTER_ROLE) {
         if (msg.sender == address(executor)) {
-            // TODO: additional security checks for orig domain + contract
+            require(
+                LibCrossDomainProperty.originSender(msg.data) == originContract &&
+                LibCrossDomainProperty.origin(msg.data) == originDomain,
+                "Expected origin contract on origin domain"
+            );
         }
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
+        emit Landed(block.chainid, address(this), tokenId, to, uri);
     }
 
     // @dev the following function is to speed demos - to be removed befofre production deployment
     function bridgeArriveDemo(address to, uint256 tokenId, string memory uri) public {
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
+        emit Landed(block.chainid, address(this), tokenId, to, uri);
     }
 
     function bridgeDepart(
-        uint32 originDomain,
+        uint32 fromDomain,
         uint32 destinationDomain,
         address destinationContract,
         uint256 tokenId,
@@ -125,7 +153,7 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
             CallParams memory callParams = CallParams({
                 to: destinationContract,
                 callData: callData,
-                originDomain: originDomain,
+                originDomain: fromDomain,
                 destinationDomain: destinationDomain,
                 agent: msg.sender, // address allowed to execute transaction on destination side in addition to relayers
                 recovery: msg.sender, // fallback address to send funds to if execution fails on destination side
@@ -147,21 +175,24 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
             connext.xcall(xcallArgs);
         } else {
             // emit event for relayer to process
-            emit BridgeStarted(uint256(destinationDomain), destinationContract, tokenId, msg.sender, uri);
+            emit Launched(uint256(destinationDomain), destinationContract, tokenId, msg.sender, uri);
         }
     }
 
-    event BridgeConfirmed(bytes32 transferId, bool success, uint32 originDomain, uint32 destinationDomain, uint256 tokenId);
+    function setTokenURI(uint256 tokenId, string calldata _tokenURI) public onlyRole(METADATA_ROLE)
+    {
+        _setTokenURI(tokenId, _tokenURI);
+    }
 
     function callback(
         bytes32 transferId,
         bool success,
         bytes memory data
     ) external onlyPromiseRouter {
-        (uint32 originDomain,
+        (uint32 fromDomain,
         uint32 destinationDomain,
         uint256 tokenId) = abi.decode(data, (uint32, uint32, uint256));
-        emit BridgeConfirmed(transferId, success, originDomain, destinationDomain, tokenId);
+        emit BridgeConfirmed(transferId, success, fromDomain, destinationDomain, tokenId);
     }
 
     // The following functions are overrides required by Solidity.
@@ -177,11 +208,6 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
         returns (string memory)
     {
         return super.tokenURI(tokenId);
-    }
-
-    function setTokenURI(uint256 tokenId, string calldata _tokenURI) public onlyRole(METADATA_ROLE)
-    {
-        _setTokenURI(tokenId, _tokenURI);
     }
 
     function supportsInterface(bytes4 interfaceId)
