@@ -17,7 +17,7 @@ import {LibCrossDomainProperty} from "@connext/nxtp-contracts/contracts/core/con
 interface IERC20 {
     function transfer(address to, uint256 amount) external returns (bool);
     function approve(address spender, uint256 amount) external returns (bool);
-    function mint(address account, uint256 amount); // connext TEST token public mint function
+    function mint(address _to, uint256 _amnt) external;
 }
 
 contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
@@ -102,14 +102,20 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
         uint32 destinationDomain,
         address destinationContract,
         uint256 tokenId,
-        string calldata uri
+        string calldata uri,
+        bool express
     ) external payable {
         require(ownerOf(tokenId) == msg.sender, "not your rocket");
         _burn(tokenId);
         if ( destinationDomain == 1735353714 || destinationDomain == 1735356532 ) {
-            bytes4 selector = bytes4(keccak256("bridgeArrive(address,uint256,string)"));
+            bytes4 selector = this.bridgeArrive.selector;
+            bool forceSlow = true;
+            if (express == true) {
+                selector = this.bridgeArriveDemo.selector;
+                forceSlow = false;
+            }
             bytes memory callData = abi.encodeWithSelector(
-                        this.bridgeArriveDemo.selector,
+                        selector,
                         address(this),
                         tokenId,
                         uri
@@ -123,7 +129,7 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
                 destinationDomain: destinationDomain,
                 agent: msg.sender, // address allowed to execute transaction on destination side in addition to relayers
                 recovery: msg.sender, // fallback address to send funds to if execution fails on destination side
-                forceSlow: true, // this must be true for authenticated calls
+                forceSlow: forceSlow, // this must be true for authenticated calls
                 receiveLocal: false, // option to receive the local bridge-flavored asset instead of the adopted asset
                 callback: address(this), // this contract implements the callback
                 callbackFee: 0, // fee paid to relayers for the callback; no fees on testnet

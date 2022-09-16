@@ -1,7 +1,7 @@
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 
 var addr = {};
-var chain = "goerli";
+var chain = "optimism-goerli";
 
 if (chain == "goerli") {
     addr.connext = "0xD9e8b18Db316d7736A3d0386C59CA3332810df3B";
