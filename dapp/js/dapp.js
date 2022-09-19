@@ -172,24 +172,6 @@ async function connect(){
         await getAvatars("polygon", "");
         console.log(avatars);
         displayAvatars();
-        if (false) {
-            window.ethereum
-                .enable()
-                .then(async result => {
-                    // Metamask is ready to go!
-                    accounts = result;
-                    console.log(accounts);
-                    $("#connect").hide();
-                    $("fieldset.current").find("p").text("Mission completed. Hit Next to continue.");
-                    await getAvatars("ethereum", "");
-                    await getAvatars("polygon", "");
-                    console.log(avatars);
-                    displayAvatars();
-                })
-                .catch(reason => {
-                    // Handle error. Likely the user rejected the login.
-                });
-        }
     } else {
         // The user doesn't have Metamask installed.
         console.log("window.ethereum false");
@@ -255,6 +237,7 @@ async function mint() {
         let mintFilter = rocket.filters.Transfer(zeroAddress, accounts[0]);
         rocket.on(mintFilter, async (from, to, tokenId, event) => { 
             console.log('tokenId:' + tokenId);
+            tokenURI = encodeURIComponent(tokenURI);
             const response = await fetch(onrampAPI + `?chain=0&id=${tokenId}&uri=${tokenURI}`);
             var result = await response.json();
             console.log(result);
@@ -267,7 +250,8 @@ function ipfsToHttp(ipfs) {
     var http = "";
     var cid = ipfs.replace("ipfs://", "");
     //http = "https://" + cid + ".ipfs.dweb.link";
-    http = "https://ipfs.io/ipfs/" + cid;
+    //http = "https://ipfs.io/ipfs/" + cid;
+    http = "https://nftstorage.link/ipfs/" + cid;
     return http;
   }
 
