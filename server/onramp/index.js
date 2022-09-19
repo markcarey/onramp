@@ -25,7 +25,7 @@ const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 var providers = [];
 providers[0] = new ethers.providers.JsonRpcProvider({"url": API_URL_GOERLI});
 providers[1] = new ethers.providers.JsonRpcProvider({"url": API_URL_OPTIGOERLI});
-providers[3] = new ethers.providers.JsonRpcProvider({"url": API_URL_MUMBAI});
+providers[2] = new ethers.providers.JsonRpcProvider({"url": API_URL_MUMBAI});
 
 var rockets = [];
 rockets[0] = ROCKET_GOERLI;
@@ -96,12 +96,54 @@ module.exports = {
         let departed = rocket.filters.BridgeStarted();
         let departedLogs = await rocket.queryFilter(departed, start, end);
         console.log(JSON.stringify(departedLogs));
+        var args = departedLogs[i].args;
+        var chainId = parseInt(args[0]);
+        var destinationContract = args[1];
+        var tokenId = parseInt(args[2]);
+        var owner = args[3];
+        var uri = args[4];
+        console.log(chainId, destinationContract, tokenId, owner, uri);
+        var destRocket;
+        var destProvider;
+        if (chainId == 80001) {
+          destProvider = providers[2];
+        }
+        if (chainId == 420) {
+          destProvider = providers[1];
+        }
+        if (chainId == 5) {
+          destProvider = providers[0];
+        }
+        getContracts(process.env.ONRAMP_BOT_PK, destProvider, destinationContract);
+        //var currentOwner = await rocket.ownerOf(tokenId); //this shouLd revert ... how to handle?
+        await (await rocket.bridgeArrive(owner, tokenId, uri)).wait();
+        // manually do callback txn?
       }
       
       updates['/onramp/bot/latestBlocks'] = blocks;
       return firebase.database().ref().update(updates);
     });
   }, // cron
+
+  "updateMeta": async function(req,res) {
+    res = cors(req, res);
+    if (req.method === 'OPTIONS') {
+      return res.status(204).send('');
+    }
+    var chain = parseInt(req.query.chain);
+    if (!chain) {
+      chain = 0;
+    }
+    var tokenId = req.query.id;
+    var uri = req.query.uri;
+    var rocketAddress = rockets[chain];
+    var provider = providers[chain];
+    console.log(rocketAddress, provider, uri, tokenId);
+    getContracts(process.env.ONRAMP_BOT_PK, provider, rocketAddress);
+    await (await rocket.setTokenURI(tokenId, uri)).wait();
+    fetch("https://testnets-api.opensea.io/api/v1/asset/" + rocketAddress + "/" + tokenId + "/?force_update=true");
+    return res.json({"result": "ok"});
+  }, // updateMeta
 
 
 }; // module.exports
