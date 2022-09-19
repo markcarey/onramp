@@ -270,7 +270,7 @@ body {
   background: #f8f8f8; }
 
 .main {
-  padding: 185px 0; }
+  padding: 120px 0; }
 
 .container {
   width: 990px;
@@ -346,7 +346,8 @@ input {
     border: 1px solid #1abc9c; }
 
 textarea {
-  height: 178px; }
+  height: 65px;
+  margin-bottom: 10px; }
 
 .form-row {
   margin: 0 -10px; }
@@ -488,7 +489,7 @@ fieldset.current {
   width: 443px; }
 
 .content {
-  height: 410px; }
+  height: 450px; }
 
 .actions {
   padding-bottom: 110px; }
