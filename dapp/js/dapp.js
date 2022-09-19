@@ -241,6 +241,8 @@ async function mint() {
             const response = await fetch(onrampAPI + `?chain=0&id=${tokenId}&uri=${tokenURI}`);
             var result = await response.json();
             console.log(result);
+            $("fieldset.current").find("div.actions").remove();
+            $("fieldset.current").find("p").html(`Mission completed. Your Rocket NFT has been minted. <a target="_blank" href="https://testnets.opensea.io/assets/goerli/${addr.rocket}/${tokenId}">View it on OpenSea</a>. Click Next to continue.`);
         });
         await tx.wait();
     }
