@@ -1,3 +1,55 @@
+const zeroAddress = "0x0000000000000000000000000000000000000000";
+
+var addr = {};
+
+var rpcURLs = {};
+rpcURLs.goerli = "eth-goerli.alchemyapi.io/v2/n_mDCfTpJ8I959arPP7PwiOptjubLm57";
+rpcURLs.mumbai = "polygon-mumbai.g.alchemy.com/v2/Ptsa6JdQQUtTbRGM1Elvw_ed3cTszLoj";
+rpcURLs.optigoerli = "opt-goerli.g.alchemy.com/v2/jb4AhFhyR0X_ChVX5J1f0oWQ6GvJqLK0";
+
+const nftPortAPI = "https://api.nftport.xyz/v0/accounts/";
+
+var chain = "goerli";
+//var chain = "optigoerli";
+var rocket;
+
+function setupChain() {
+    var rpcURL = rpcURLs[chain];
+    if (chain == "goerli") {
+        addr.WETH = "";
+        addr.rocket = "";
+        addr.FUEL = "";
+        addr.FUELx = "";
+        addr.connext = "0xD9e8b18Db316d7736A3d0386C59CA3332810df3B";
+        addr.router = "0x570faC55A96bDEA6DE85632e4b2c7Fde4efFAD55";
+        addr.test = "0x7ea6eA49B0b0Ae9c5db7907d139D9Cd3439862a1";
+    }
+    if (chain == "mumbai") {
+        addr.WETH = "";
+        addr.rocket = "";
+        // TODO: aave addresses
+        addr.connext = zeroAddress;
+        addr.router = zeroAddress;
+        addr.test = zeroAddress;
+    }
+    if (chain == "optigoerli") {
+        addr.WETH = "";
+        addr.rocket = "";
+        addr.connext = "0xA04f29c24CCf3AF30D4164F608A56Dc495B2c976";
+        addr.router = "0xF0Efb28f638A5262DdA8E8C4556eac4F0B749A22";
+        addr.test = "0x68Db1c8d85C09d546097C65ec7DCBFF4D6497CbF";
+    }
+    const prov = {"url": "https://"+rpcURL};
+    var provider = new ethers.providers.JsonRpcProvider(prov);
+    var wssProvider = new ethers.providers.WebSocketProvider(
+        "wss://" + rpcURL
+    );
+    rocket = new ethers.Contract(
+        addr.rocket,
+        rocketABI,
+        wssProvider
+    );
+}
 
 
 
