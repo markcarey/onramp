@@ -93,12 +93,11 @@ contract Rocket is ERC721, ERC721URIStorage, ERC721Burnable, AccessControl {
         originDomain = _domain;
     }
 
-    function mint(address to, string calldata _tokenURI) public {
+    function mint(address to) public {
         require(_origin == true, "public mint only on origin chain");
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, _tokenURI);
     }
 
     function exists(uint256 tokenId) public view returns(bool) {
