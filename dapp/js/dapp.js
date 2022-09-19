@@ -202,50 +202,50 @@ async function displayAvatars() {
 }
 
 async function mint() {
-    var nftImage = $("img.rocket").attr("src");
-    var metaJSON = {
-        "name": "onRamp Rocket",
-        "description": "Complete onRamp missions to evolve your rocket at https://onramp.quest",
-        "external_url": "https://onramp.quest", 
-        "image": nftImage,
-        "seller_fee_basis_points": 500,
-        "fee_recipient": accounts[0],
-        "attributes": [
-            {
-                "trait_type": "Level", 
-                "value": 4,
-                "max_value": 12
-            }, 
-        ] 
-    };
-    const blob = new Blob([JSON.stringify(metaJSON)], { type: 'application/json' });
-    const file = new File([ blob ], 'metadata.json');
-    const response = await fetch('https://api.nft.storage/upload', { 
-        method: 'post', 
-        headers: new Headers({
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDU0NkZiYmNhOEIzZDIwMDAzZTA2ZjMzZmRBN0E0NzUxMGExRUY5OTgiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTYyODYxMDE3NzQxNSwibmFtZSI6InNwcm91dCBtZXRhZGF0YSJ9.6YwPqstbUyRfNiGwEaYccfGZZYGmXOSuAuLzLduwdRM', 
-            'Content-Type': 'application/json'
-        }), 
-        body: file
-    });
-    var result = await response.json();
-    console.log( result );
-    if (result.ok) {
-        var tokenURI = ipfsToHttp(result.value.cid);
-        var tx = await rocket.connect(ethersSigner).selfMint(accounts[0]);
-        console.log(tx);
-        let mintFilter = rocket.filters.Transfer(zeroAddress, accounts[0]);
-        rocket.on(mintFilter, async (from, to, tokenId, event) => { 
-            console.log('tokenId:' + tokenId);
+    var tx = await rocket.connect(ethersSigner).selfMint(accounts[0]);
+    console.log(tx);
+    let mintFilter = rocket.filters.Transfer(zeroAddress, accounts[0]);
+    rocket.on(mintFilter, async (from, to, tokenId, event) => { 
+        console.log('tokenId:' + tokenId);
+        var nftImage = $("img.rocket").attr("src");
+        var metaJSON = {
+            "name": "onRamp Rocket #" + tokenId,
+            "description": "Complete onRamp missions to evolve your rocket at https://onramp.quest",
+            "external_url": "https://onramp.quest", 
+            "image": nftImage,
+            "seller_fee_basis_points": 500,
+            "fee_recipient": accounts[0],
+            "attributes": [
+                {
+                    "trait_type": "Level", 
+                    "value": 4,
+                    "max_value": 12
+                }, 
+            ] 
+        };
+        const blob = new Blob([JSON.stringify(metaJSON)], { type: 'application/json' });
+        const file = new File([ blob ], 'metadata.json');
+        const res = await fetch('https://api.nft.storage/upload', { 
+            method: 'post', 
+            headers: new Headers({
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDU0NkZiYmNhOEIzZDIwMDAzZTA2ZjMzZmRBN0E0NzUxMGExRUY5OTgiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTYyODYxMDE3NzQxNSwibmFtZSI6InNwcm91dCBtZXRhZGF0YSJ9.6YwPqstbUyRfNiGwEaYccfGZZYGmXOSuAuLzLduwdRM', 
+                'Content-Type': 'application/json'
+            }), 
+            body: file
+        });
+        result = await res.json();
+        console.log( result );
+        if (result.ok) {
+            var tokenURI = ipfsToHttp(result.value.cid);
             tokenURI = encodeURIComponent(tokenURI);
             const response = await fetch(onrampAPI + `?chain=0&id=${tokenId}&uri=${tokenURI}`);
             var result = await response.json();
             console.log(result);
             $("fieldset.current").find("div.actions").remove();
             $("fieldset.current").find("p").html(`Mission completed. Your Rocket NFT has been minted. <a target="_blank" href="https://testnets.opensea.io/assets/goerli/${addr.rocket}/${tokenId}">View it on OpenSea</a>. Click Next to continue.`);
-        });
-        await tx.wait();
-    }
+        }
+    });
+    await tx.wait();
 }
 
 function ipfsToHttp(ipfs) {
