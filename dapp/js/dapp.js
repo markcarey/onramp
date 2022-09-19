@@ -12,12 +12,16 @@ const nftPortAPI = "https://api.nftport.xyz/v0/accounts/";
 var chain = "goerli";
 //var chain = "optigoerli";
 var rocket;
+var accounts = [];
+var provider, ethersSigner;
+var avatars = [];
+var noNFTAvatars = [];
 
 function setupChain() {
     var rpcURL = rpcURLs[chain];
     if (chain == "goerli") {
         addr.WETH = "";
-        addr.rocket = "";
+        addr.rocket = "0x42a47396CEb4D61f59c2BA60D5549bb313751B91";
         addr.FUEL = "";
         addr.FUELx = "";
         addr.connext = "0xD9e8b18Db316d7736A3d0386C59CA3332810df3B";
@@ -40,7 +44,8 @@ function setupChain() {
         addr.test = "0x68Db1c8d85C09d546097C65ec7DCBFF4D6497CbF";
     }
     const prov = {"url": "https://"+rpcURL};
-    var provider = new ethers.providers.JsonRpcProvider(prov);
+    provider = new ethers.providers.JsonRpcProvider(prov);
+    provider = new ethers.providers.Web3Provider(window.ethereum);
     var wssProvider = new ethers.providers.WebSocketProvider(
         "wss://" + rpcURL
     );
@@ -49,6 +54,46 @@ function setupChain() {
         rocketABI,
         wssProvider
     );
+}
+setupChain();
+
+async function getAvatars(nftChain, continuation) {
+    const response = await fetch(nftPortAPI + accounts[0] + `?chain=${nftChain}&page_size=50&continuation=${continuation}&include=default&exclude=erc1155`, { 
+        method: 'get', 
+        headers: new Headers({
+            'Authorization': '5ba19522-1beb-4733-af95-49879ac408cc', 
+            'Content-Type': 'application/json'
+        })
+    });
+    var result = await response.json();
+    console.log( result );
+    if (result.response == 'OK') {
+        if ("continuation" in result) {
+            continuation = result.continuation;
+        } else {
+            continuation = "";
+        }
+        for (let i = 0; i < result.nfts.length; i++) {
+            var nft = result.nfts[i];
+            var add = false;
+            if ("file_url" in nft) {
+                if (nft.file_url) {
+                    add = true;
+                }
+            }
+            if (add) {
+                var img = nft.file_url;
+                if ( img.startsWith('ipfs://') ) {
+                    img = ipfsToHttp(nft.file_url);
+                }
+                avatars.push(img);
+            }
+        }
+        if (continuation) {
+            await getAvatars(nftChain, continuation);
+        }
+        return 1;
+    }
 }
 
 
@@ -99,8 +144,8 @@ async function getNFTImage(url, level) {
         var result = await response.json();
         //console.log( result );
         if (result.ok) {
-            var metaImage = "https://" + result.value.cid + ".ipfs.dweb.link/";
-            //document.querySelector('img').src = metaImage;
+            //var metaImage = "https://" + result.value.cid + ".ipfs.dweb.link/";
+            var metaImage = ipfsToHttp(result.value.cid);
             return metaImage;
         }
     });
@@ -112,4 +157,120 @@ async function merge() {
     document.querySelector('img').src = ipfsUrl;
 }
 
-merge();
+async function connect(){
+    if (window.ethereum) {
+        //console.log("window.ethereum true");
+        await provider.send("eth_requestAccounts", []);
+        ethersSigner = provider.getSigner();
+        accounts[0] = await ethersSigner.getAddress();
+        //console.log("Account:", await ethersSigner.getAddress()); 
+        console.log(accounts);
+        $("#connect").hide();
+        $("fieldset.current").find("p").text("Mission completed. Hit Next to continue.");
+        await getAvatars("ethereum", "");
+        await getAvatars("polygon", "");
+        console.log(avatars);
+        displayAvatars();
+        if (false) {
+            window.ethereum
+                .enable()
+                .then(async result => {
+                    // Metamask is ready to go!
+                    accounts = result;
+                    console.log(accounts);
+                    $("#connect").hide();
+                    $("fieldset.current").find("p").text("Mission completed. Hit Next to continue.");
+                    await getAvatars("ethereum", "");
+                    await getAvatars("polygon", "");
+                    console.log(avatars);
+                    displayAvatars();
+                })
+                .catch(reason => {
+                    // Handle error. Likely the user rejected the login.
+                });
+        }
+    } else {
+        // The user doesn't have Metamask installed.
+        console.log("window.ethereum false");
+    } 
+}
+
+async function displayAvatars() {
+    if ( avatars.length == 0 ) {
+        avatars = noNFTAvatars;
+    }
+    for (let i = avatars.length; i > (avatars.length - 12); i--) {
+        $("#avatars").append(`<li><a href="#"><img src="${avatars[i]}" /></a></li>`);
+    }
+    $("#avatars li a img").bind("error", function(){
+            $(this).remove();
+    });
+    $("#avatars li a").click(async function(){
+        var $chosen = $(this);
+        var url = $(this).find("img").attr("src");
+        console.log("chosen avatar: " + url);
+        $("#avatars li a").not($chosen).each(function(){
+            $(this).parent().remove();
+        });
+        var rocketURL = await getNFTImage(url, 1);
+        console.log(rocketURL);
+        $(".rocket").attr("src", rocketURL);
+    });
+}
+
+async function mint() {
+    var nftImage = $("img.rocket").attr("src");
+    var metaJSON = {
+        "name": "onRamp Rocket",
+        "description": "Complete onRamp missions to evolve your rocket at https://onramp.quest",
+        "external_url": "https://onramp.quest", 
+        "image": nftImage,
+        "seller_fee_basis_points": 500,
+        "fee_recipient": accounts[0],
+        "attributes": [
+            {
+                "trait_type": "Level", 
+                "value": 4,
+                "max_value": 12
+            }, 
+        ] 
+    };
+    const blob = new Blob([JSON.stringify(metaJSON)], { type: 'application/json' });
+    const file = new File([ blob ], 'metadata.json');
+    const response = await fetch('https://api.nft.storage/upload', { 
+        method: 'post', 
+        headers: new Headers({
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDU0NkZiYmNhOEIzZDIwMDAzZTA2ZjMzZmRBN0E0NzUxMGExRUY5OTgiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTYyODYxMDE3NzQxNSwibmFtZSI6InNwcm91dCBtZXRhZGF0YSJ9.6YwPqstbUyRfNiGwEaYccfGZZYGmXOSuAuLzLduwdRM', 
+            'Content-Type': 'application/json'
+        }), 
+        body: file
+    });
+    var result = await response.json();
+    console.log( result );
+    if (result.ok) {
+        // TODO: mint it!
+        var tx = await rocket.connect(ethersSigner).selfMint(accounts[0]);
+        console.log(tx);
+        await tx.wait();
+    }
+}
+
+function ipfsToHttp(ipfs) {
+    var http = "";
+    var cid = ipfs.replace("ipfs://", "");
+    //http = "https://" + cid + ".ipfs.dweb.link";
+    http = "https://ipfs.io/ipfs/" + cid;
+    return http;
+  }
+
+$( document ).ready(function() {
+
+    $("#connect").click(function(){
+        connect();
+    });
+
+    $("#mint").click(function(){
+        mint();
+    });
+
+});

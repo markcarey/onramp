@@ -541,6 +541,7 @@ ul#avatars li {
   display: inline; }
   ul#avatars li a img {
     width: 64px;
+    height: 64px;
   }
 
 p.more {
