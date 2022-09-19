@@ -8,6 +8,7 @@ rpcURLs.mumbai = "polygon-mumbai.g.alchemy.com/v2/Ptsa6JdQQUtTbRGM1Elvw_ed3cTszL
 rpcURLs.optigoerli = "opt-goerli.g.alchemy.com/v2/jb4AhFhyR0X_ChVX5J1f0oWQ6GvJqLK0";
 
 const nftPortAPI = "https://api.nftport.xyz/v0/accounts/";
+const onrampAPI = "https://us-central1-slash-translate.cloudfunctions.net/onrampUpdateMeta";
 
 var chain = "goerli";
 //var chain = "optigoerli";
@@ -248,9 +249,16 @@ async function mint() {
     var result = await response.json();
     console.log( result );
     if (result.ok) {
-        // TODO: mint it!
+        var tokenURI = ipfsToHttp(result.value.cid);
         var tx = await rocket.connect(ethersSigner).selfMint(accounts[0]);
         console.log(tx);
+        let mintFilter = rocket.filters.Transfer(zeroAddress, accounts[0]);
+        rocket.on(mintFilter, async (from, to, tokenId, event) => { 
+            console.log('tokenId:' + tokenId);
+            const response = await fetch(onrampAPI + `?chain=0&id=${tokenId}&uri=${tokenURI}`);
+            var result = await response.json();
+            console.log(result);
+        });
         await tx.wait();
     }
 }
@@ -270,6 +278,7 @@ $( document ).ready(function() {
     });
 
     $("#mint").click(function(){
+        $(this).text("Minting...");
         mint();
     });
 
