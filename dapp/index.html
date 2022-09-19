@@ -1,14 +1,177 @@
-<html>
-    <head>
-        
-    </head>
+<!DOCTYPE html>
+<html lang="en">
 
-    <body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="author" content="colorlib.com">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>onRamp Quest</title>
 
-        <img src="https://degendogs.club/images/0.png" />
+    <!-- Font Icon -->
+    <link rel="stylesheet" href="fonts/material-icon/css/material-design-iconic-font.min.css">
 
-        <script src="https://unpkg.com/merge-images"></script>
-        <script src="/js/dapp.js"></script>
+    <!-- Main css -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
 
-    </body>
+<body>
+
+    <div class="main">
+
+        <div class="container">
+            <form method="POST" id="quest-form" class="signup-form" enctype="multipart/form-data">
+
+                <!-- Misson 1-->
+                <h3>🚀 onRamp Quest</h3>
+                <fieldset>
+                    <span class="step-current"><span class="step-current-content"><span class="step-number"><span>1</span>/10</span></span></span>
+                    <div class="fieldset-flex">
+                        <figure>
+                            <iframe width="375" height="211" src="https://www.youtube.com/embed/cn8gKxUSquo" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </figure>
+                        <div class="fieldset-content">
+                            <div class="form-textarea">
+                                <label for="your_review" class="form-label">Misson 1: Install Metamask Wallet</label>
+                                <p>Install Metamask and hit connect.</p>
+                                <div class="actions clearfix">
+                                    <ul role="" aria-label="">
+                                        <li style="display: none;"></li>
+                                        <li aria-hidden="false" aria-disabled="false"><a id="connect" href="#" role="">Connect</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Misson 2-->
+                <h3></h3>
+                <fieldset>
+                    <span class="step-current"><span class="step-current-content"><span class="step-number"><span>2</span>/10</span></span></span>
+                    <div class="fieldset-flex">
+                        <figure>
+                            <img src="images/levels/1.png" alt="">
+                        </figure>
+                        <div class="fieldset-content">
+                            <label class="form-label">Mission 2: Fund Your Wallet</label>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <input type="text" name="first_name" id="first_name" placeholder="First Name" />
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" name="last_name" id="last_name" placeholder="Last Name" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <input type="creditcard" name="card_number" id="card_number" placeholder="Credit Card Number" />
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <input type="text" name="expiry" id="expiry" placeholder="Expiry Date" />
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" name="CCV" id="ccv" placeholder="CCV" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+
+                <!-- Misson 3-->
+                <h3></h3>
+                <fieldset>
+                    <span class="step-current"> <span class="step-current-content"><span class="step-number"><span>3</span>/10</span></span> </span>
+                    <div class="fieldset-flex">
+                        <figure>
+                            <img src="images/levels/1.png" alt="" style="width: 375px;">
+                        </figure>
+                        <div class="fieldset-content">
+                            <h2>Mission 3 - Choose Avatar</h2>
+                            
+                            <ul id="avatars">
+                                <li><a href="#"><img src="https://api.degendogs.club/images/0.png" /></a></li>
+                                <li><a href="#"><img src="https://api.degendogs.club/images/0.png" /></a></li>
+                                <li><a href="#"><img src="https://api.degendogs.club/images/0.png" /></a></li>
+                                <li><a href="#"><img src="https://api.degendogs.club/images/0.png" /></a></li>
+                                <li><a href="#"><img src="https://api.degendogs.club/images/0.png" /></a></li>
+                                <li><a href="#"><img src="https://api.degendogs.club/images/0.png" /></a></li>
+                                <li><a href="#"><img src="https://api.degendogs.club/images/0.png" /></a></li>
+                                <li><a href="#"><img src="https://api.degendogs.club/images/0.png" /></a></li>
+                            </ul>
+                            <p class="more"><a href="#">show more</a></p>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <h3></h3>
+                <fieldset>
+                    <span class="step-current"><span class="step-current-content"><span class="step-number"><span>4</span>/10</span></span></span>
+                    <div class="fieldset-flex">
+                        <figure>
+                            <img class="rocket" src="images/levels/1.png" alt="">
+                        </figure>
+                        <div class="fieldset-content">
+                            <h2>Mission 4 - Mint Rocket NFT</h2>
+                            <p>Mint a Rocket NFT to your wallet</p>
+                            <div class="actions clearfix">
+                                <ul role="" aria-label="">
+                                    <li style="display: none;"></li>
+                                    <li aria-hidden="false" aria-disabled="false"><a id="mint" href="#" role="">Mint NFT</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <h3></h3>
+                <fieldset>
+                    <span class="step-current"><span class="step-current-content"><span class="step-number"><span>5</span>/10</span></span></span>
+                    <div class="fieldset-flex">
+                        <figure>
+                            <iframe width="375" height="211" src="https://www.youtube.com/embed/cn8gKxUSquo" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </figure>
+                        <div class="fieldset-content">
+                            <div class="form-textarea">
+                                <label for="your_review" class="form-label">Mission 5</label>
+                                <p>TBD</p>
+                                <div class="actions clearfix">
+                                    <ul role="" aria-label="">
+                                        <li style="display: none;"></li>
+                                        <li aria-hidden="false" aria-disabled="false"><a id="connect" href="#" role="">TBD</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+
+                <h3></h3>
+                <fieldset>
+                    <span class="step-current"><span class="step-current-content"><span class="step-number"><span>10</span>/10</span></span></span>
+                    <div class="fieldset-flex">
+                        <figure>
+                            <img src="images/signup-img-3.png" alt="">
+                        </figure>
+                        <div class="fieldset-content">
+                            <label class="form-label">Mission Accomplished!</label>
+                            
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- JS -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="vendor/jquery-validation/dist/additional-methods.min.js"></script>
+    <script src="vendor/jquery-steps/jquery.steps.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
 </html>
