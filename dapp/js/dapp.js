@@ -12,7 +12,7 @@ const onrampAPI = "https://us-central1-slash-translate.cloudfunctions.net/onramp
 
 var chain = "goerli";
 //var chain = "optigoerli";
-var rocket;
+var web3, rocket, dropper;
 var accounts = [];
 var provider, ethersSigner;
 var avatars = [];
@@ -27,7 +27,10 @@ function setupChain() {
         addr.FUELx = "0xE3B89a65eDF515b76690348c26CA5fC5e01AFace";
         addr.connext = "0xD9e8b18Db316d7736A3d0386C59CA3332810df3B";
         addr.router = "0x570faC55A96bDEA6DE85632e4b2c7Fde4efFAD55";
+        addr.airdrop = "0xd4C332759c151a6c115931B6Dd7134fE064A06AE";
         addr.test = "0x7ea6eA49B0b0Ae9c5db7907d139D9Cd3439862a1";
+        addr.SuperHost = "0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9";
+        addr.cfa = "0xEd6BcbF6907D4feEEe8a8875543249bEa9D308E8";
     }
     if (chain == "mumbai") {
         addr.WETH = "";
@@ -55,6 +58,12 @@ function setupChain() {
         rocketABI,
         wssProvider
     );
+    dropper = new ethers.Contract(
+        addr.airdrop,
+        airdropABI,
+        wssProvider
+    );
+    web3 = AlchemyWeb3.createAlchemyWeb3("wss://"+rpcURL);
 }
 setupChain();
 
@@ -63,13 +72,13 @@ tokens.FUEL = {
     "address": addr.FUEL,
     "symbol": "FUEL",
     "decimals": 18,
-    "image": "/images/FUEL.png"
+    "image": "https://daoit.xyz/images/FUEL.png"
 }
 tokens.FUELx = {
     "address": addr.FUELx,
     "symbol": "FUELx",
     "decimals": 18,
-    "image": "/images/FUELx.png"
+    "image": "https://daoit.xyz/images/FUELx.png"
 }
 
 async function addToken(symbol) {
@@ -297,6 +306,18 @@ async function mint() {
     await tx.wait();
 }
 
+async function airdrop() {
+    var tx = await dropper.connect(ethersSigner).claim();
+    console.log(tx);
+    let claimedFilter = dropper.filters.Claimed(accounts[0]);
+    dropper.on(claimedFilter, async (to, amount, event) => { 
+        console.log('amount:' + amount);
+        $("fieldset.current").find("div.actions").remove();
+        $("fieldset.current").find("p").html(`Mission completed. You have claimed <a href="#" class="add-token" title="Add FUEL to Metamask" data-symbol="FUEL">FUEL</a> and <a href="#"  title="Add FUELx to Metamask" class="add-token" data-symbol="FUELx">FUELx</a> tokens. Click Next to continue.`);
+    });
+    await tx.wait();
+}
+
 function ipfsToHttp(ipfs) {
     var http = "";
     var cid = ipfs.replace("ipfs://", "");
@@ -319,10 +340,17 @@ $( document ).ready(function() {
         return false;
     });
 
-    $(".add-token").click(function(){
+    $("#airdrop").click(function(){
+        $(this).text("Claiming...");
+        airdrop();
+        return false;
+    });
+
+    $("p").on("click", ".add-token", async function() {
         const symbol = $(this).data("symbol");
         addToken(symbol);
         return false;
     });
+
 
 });
