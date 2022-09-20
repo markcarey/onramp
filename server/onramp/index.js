@@ -78,7 +78,7 @@ module.exports = {
       var blocks = bot.latestBlocks;
       console.log("db latest", blocks);
 
-      if (!blocks) {
+      if ( !blocks ) {
         // defaults
         blocks[0] = 7566200; // goerli
         blocks[1] = 29813; // optigoerli
@@ -93,31 +93,38 @@ module.exports = {
         getContracts(process.env.ONRAMP_BOT_PK, provider, rocketAddress);
         var start = latestBlock + 1;
         var end = 'latest';
-        let departed = rocket.filters.BridgeStarted();
+        let departed = rocket.filters.Launched();
         let departedLogs = await rocket.queryFilter(departed, start, end);
         console.log(JSON.stringify(departedLogs));
-        var args = departedLogs[i].args;
-        var chainId = parseInt(args[0]);
-        var destinationContract = args[1];
-        var tokenId = parseInt(args[2]);
-        var owner = args[3];
-        var uri = args[4];
-        console.log(chainId, destinationContract, tokenId, owner, uri);
-        var destRocket;
-        var destProvider;
-        if (chainId == 80001) {
-          destProvider = providers[2];
+        for (let j = 0; i < departedLogs.length; j++) {
+          var args = departedLogs[j].args;
+          var chainId = parseInt(args[0]);
+          var destinationContract = args[1];
+          var tokenId = parseInt(args[2]);
+          var owner = args[3];
+          var uri = args[4];
+          console.log(chainId, destinationContract, tokenId, owner, uri);
+          var destRocket;
+          var destProvider;
+          if (chainId == 80001) {
+            destProvider = providers[2];
+          }
+          if (chainId == 420) {
+            destProvider = providers[1];
+          }
+          if (chainId == 5) {
+            destProvider = providers[0];
+          }
+          if ( departedLogs[j].blockNumber > blocks[i] ) {
+            blocks[i] = departedLogs[j].blockNumber;
+          }
+          getContracts(process.env.ONRAMP_BOT_PK, destProvider, destinationContract);
+          //var currentOwner = await rocket.ownerOf(tokenId); //this shouLd revert ... how to handle?
+          await (await rocket.bridgeArrive(owner, tokenId, uri)).wait();
+          // manually do callback txn?
         }
-        if (chainId == 420) {
-          destProvider = providers[1];
-        }
-        if (chainId == 5) {
-          destProvider = providers[0];
-        }
-        getContracts(process.env.ONRAMP_BOT_PK, destProvider, destinationContract);
-        //var currentOwner = await rocket.ownerOf(tokenId); //this shouLd revert ... how to handle?
-        await (await rocket.bridgeArrive(owner, tokenId, uri)).wait();
-        // manually do callback txn?
+        var latestBlock = parseInt(await provider.getBlockNumber()) - 1;
+        blocks[i] = latestBlock;
       }
       
       updates['/onramp/bot/latestBlocks'] = blocks;
