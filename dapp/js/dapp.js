@@ -23,8 +23,8 @@ function setupChain() {
     if (chain == "goerli") {
         addr.WETH = "";
         addr.rocket = "0x42a47396CEb4D61f59c2BA60D5549bb313751B91";
-        addr.FUEL = "";
-        addr.FUELx = "";
+        addr.FUEL = "0xD75bA886DC86c37FBFf26415AE41246873B8b9bc";
+        addr.FUELx = "0xE3B89a65eDF515b76690348c26CA5fC5e01AFace";
         addr.connext = "0xD9e8b18Db316d7736A3d0386C59CA3332810df3B";
         addr.router = "0x570faC55A96bDEA6DE85632e4b2c7Fde4efFAD55";
         addr.test = "0x7ea6eA49B0b0Ae9c5db7907d139D9Cd3439862a1";
@@ -57,6 +57,55 @@ function setupChain() {
     );
 }
 setupChain();
+
+const tokens = {};
+tokens.FUEL = {
+    "address": addr.FUEL,
+    "symbol": "FUEL",
+    "decimals": 18,
+    "image": "/images/FUEL.png"
+}
+tokens.FUELx = {
+    "address": addr.FUELx,
+    "symbol": "FUELx",
+    "decimals": 18,
+    "image": "/images/FUELx.png"
+}
+
+async function addToken(symbol) {
+    var token = tokens[symbol];
+    console.log(token);
+    const tokenAddress = token.address;
+    const tokenSymbol = token.symbol;
+    const tokenDecimals = token.decimals;
+    var tokenImage = token.image;
+    //console.log("tokenImage", tokenImage);
+
+    try {
+        // wasAdded is a boolean. Like any RPC method, an error may be thrown.
+        const wasAdded = await ethereum.request({
+            method: 'wallet_watchAsset',
+            params: {
+                type: 'ERC20', // Initially only supports ERC20, but eventually more!
+                options: {
+                    address: tokenAddress, // The address that the token is at.
+                    symbol: tokenSymbol, // A ticker symbol or shorthand, up to 5 chars.
+                    decimals: tokenDecimals, // The number of decimals in the token
+                    image: tokenImage, // A string url of the token logo
+                },
+            },
+        });
+
+        if (wasAdded) {
+            console.log('Thanks for your interest!');
+        } else {
+            console.log('Your loss!');
+        }
+    } catch (error) {
+        console.log(error);
+    }
+    return false;
+}
 
 async function getAvatars(nftChain, continuation) {
     const response = await fetch(nftPortAPI + accounts[0] + `?chain=${nftChain}&page_size=50&continuation=${continuation}&include=default&exclude=erc1155`, { 
@@ -261,11 +310,19 @@ $( document ).ready(function() {
 
     $("#connect").click(function(){
         connect();
+        return false;
     });
 
     $("#mint").click(function(){
         $(this).text("Minting...");
         mint();
+        return false;
+    });
+
+    $(".add-token").click(function(){
+        const symbol = $(this).data("symbol");
+        addToken(symbol);
+        return false;
     });
 
 });

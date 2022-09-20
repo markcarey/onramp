@@ -1,0 +1,22 @@
+Contracts
+
+DAO Token: 0xD75bA886DC86c37FBFf26415AE41246873B8b9bc - This is an ERC20 governance token that supports on-chain voting on DAO proposals.
+Super Token: 0xE3B89a65eDF515b76690348c26CA5fC5e01AFace - This is an upgraded version of your DAO token. It can be streamed in real-time to any address, but will need to be downgraded(unwrapped) to use for voting.
+DAO Manager: 0x2B835CA7a01711D562746dcBf228a4274aD0CdBa - The manager contract manages distribution of your tokens via 1) deposits, 2) streaming, and/or 3) grants.
+Governor: 0x6a87263b409F09cB22cd3481f75187CAD0ba7DBb - Open Zeppelin Governor contract that enables DAO proposals and voting. Learn more.
+Timelock: 0xDea3f9Ccf305BfC19d20B8E21CF752FB9DC6e5d5 - Open Zeppelin Timelock contract that ultimately executes DAO proposals and acts a treasury, holding all funds.
+
+Next Steps: Add the DAO to Tally
+Tally provides an interface for creating proposals and enabling voting (used by Compound and others). You can add your DAO to Tally by going to https://www.withtally.com/register/protocol. You will be asked to fill in details about the DAO, including:
+
+Token
+Type: choose ERC20
+Token address: 0xD75bA886DC86c37FBFf26415AE41246873B8b9bc
+Chain: choose Ethereum Testnet Goerli
+Start block: 7624070
+Governance
+Governance type: choose OPENZEPPELINGOVERNOR
+Chain: choose Ethereum Testnet Goerli
+Governor address: 0x6a87263b409F09cB22cd3481f75187CAD0ba7DBb
+Start block: 7624074
+About D
