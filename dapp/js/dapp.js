@@ -72,13 +72,13 @@ tokens.FUEL = {
     "address": addr.FUEL,
     "symbol": "FUEL",
     "decimals": 18,
-    "image": "https://daoit.xyz/images/FUEL.png"
+    "image": "https://onramp.quest/images/FUEL.png"
 }
 tokens.FUELx = {
     "address": addr.FUELx,
     "symbol": "FUELx",
     "decimals": 18,
-    "image": "https://daoit.xyz/images/FUELx.png"
+    "image": "https://onramp.quest/images/FUELx.png"
 }
 
 async function addToken(symbol) {
