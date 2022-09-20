@@ -16,7 +16,24 @@ var web3, rocket, dropper;
 var accounts = [];
 var provider, ethersSigner;
 var avatars = [];
-var noNFTAvatars = [];
+var noNFTAvatars = [
+    "https://onramp.quest/images/avatars/glasses.png",
+    "https://onramp.quest/images/avatars/crazy.png",
+    "https://onramp.quest/images/avatars/eyeroll.png"
+];
+var tokenId;
+
+var rocketAddresses = {
+    "1735356532": "0xC2Bd00E6Ba411efd034dcD5Fd8DF6377feFaE702",
+    "420": "0xC2Bd00E6Ba411efd034dcD5Fd8DF6377feFaE702",
+    "1735353714": "0x42a47396CEb4D61f59c2BA60D5549bb313751B91",
+    "5": "0x42a47396CEb4D61f59c2BA60D5549bb313751B91",
+    "80001": "0xC2Bd00E6Ba411efd034dcD5Fd8DF6377feFaE702"
+};
+
+const sleep = (milliseconds) => {
+    return new Promise(resolve => setTimeout(resolve, milliseconds))
+};
 
 function setupChain() {
     var rpcURL = rpcURLs[chain];
@@ -34,7 +51,7 @@ function setupChain() {
     }
     if (chain == "mumbai") {
         addr.WETH = "";
-        addr.rocket = "";
+        addr.rocket = "0xC2Bd00E6Ba411efd034dcD5Fd8DF6377feFaE702";
         // TODO: aave addresses
         addr.connext = zeroAddress;
         addr.router = zeroAddress;
@@ -42,7 +59,7 @@ function setupChain() {
     }
     if (chain == "optigoerli") {
         addr.WETH = "";
-        addr.rocket = "";
+        addr.rocket = "0xC2Bd00E6Ba411efd034dcD5Fd8DF6377feFaE702";
         addr.connext = "0xA04f29c24CCf3AF30D4164F608A56Dc495B2c976";
         addr.router = "0xF0Efb28f638A5262DdA8E8C4556eac4F0B749A22";
         addr.test = "0x68Db1c8d85C09d546097C65ec7DCBFF4D6497CbF";
@@ -158,27 +175,35 @@ async function getAvatars(nftChain, continuation) {
 
 
 async function getNFTImage(url, level) {
-    var w = 173;
-    var h = 173;
-    var nftURL = url;
-    //nftURL = 'https://img.seadn.io/files/a4a26c85eee22e24551483b21d53f092.png?fit=max&w=160';
-    const nft = new Image(100, 100);
-    nft.crossOrigin = 'Anonymous';
-    nft.src = 'https://api.codetabs.com/v1/proxy/?quest=' + nftURL;
-    await nft.decode();
+    var background, foreground;
+    if ( level == 1) {
+        foreground = { src: `images/levels/${level}.png`, x: 0, y: 0 };
+        var w = 173;
+        var h = 173;
+        var nftURL = url;
+        //nftURL = 'https://img.seadn.io/files/a4a26c85eee22e24551483b21d53f092.png?fit=max&w=160';
+        const nft = new Image(100, 100);
+        nft.crossOrigin = 'Anonymous';
+        nft.src = 'https://api.codetabs.com/v1/proxy/?quest=' + nftURL;
+        await nft.decode();
 
-    var canvas = document.createElement('canvas'),
-        ctx = canvas.getContext('2d');
-    canvas.height = h;
-    canvas.width = w;
-    ctx.drawImage(nft, 0, 0, w, h);
-    var uri = canvas.toDataURL('image/jpg'),
-        base64 = uri.replace(/^data:image\/jpg;base64,/, "");
+        var canvas = document.createElement('canvas'),
+            ctx = canvas.getContext('2d');
+        canvas.height = h;
+        canvas.width = w;
+        ctx.drawImage(nft, 0, 0, w, h);
+        var uri = canvas.toDataURL('image/jpg'),
+            base64 = uri.replace(/^data:image\/jpg;base64,/, "");
+        background = { src: uri, x: 295, y: 44 };
+    } else {
+        background = url;
+        foreground = `images/levels/${level}.png`;
+    }
 
     return mergeImages(
         [
-            { src: uri, x: 295, y: 44 },
-            { src: `images/levels/${level}.png`, x: 0, y: 0 }
+            background,
+            foreground
         ],
         {
             crossOrigin: "Anonymous"
@@ -259,11 +284,53 @@ async function displayAvatars() {
     });
 }
 
+async function updateMetadata(tokenId, nftImage, level, chain) {
+    var metaJSON = {
+        "name": "onRamp Rocket #" + tokenId,
+        "description": "Complete onRamp missions to evolve your rocket at https://onramp.quest",
+        "external_url": "https://onramp.quest", 
+        "image": nftImage,
+        "seller_fee_basis_points": 500,
+        "fee_recipient": accounts[0],
+        "attributes": [
+            {
+                "trait_type": "Level", 
+                "value": level,
+                "max_value": 12
+            }, 
+        ] 
+    };
+    const blob = new Blob([JSON.stringify(metaJSON)], { type: 'application/json' });
+    const file = new File([ blob ], 'metadata.json');
+    const res = await fetch('https://api.nft.storage/upload', { 
+        method: 'post', 
+        headers: new Headers({
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDU0NkZiYmNhOEIzZDIwMDAzZTA2ZjMzZmRBN0E0NzUxMGExRUY5OTgiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTYyODYxMDE3NzQxNSwibmFtZSI6InNwcm91dCBtZXRhZGF0YSJ9.6YwPqstbUyRfNiGwEaYccfGZZYGmXOSuAuLzLduwdRM', 
+            'Content-Type': 'application/json'
+        }), 
+        body: file
+    });
+    result = await res.json();
+    console.log( result );
+    if (result.ok) {
+        var tokenURI = ipfsToHttp(result.value.cid);
+        if (chain == null) {
+            return tokenURI;
+        } else {
+            tokenURI = encodeURIComponent(tokenURI);
+            const response = await fetch(onrampAPI + `?chain=${chain}&id=${tokenId}&uri=${tokenURI}`);
+            var result = await response.json();
+            console.log(result);
+        }
+    }
+}
+
 async function mint() {
     var tx = await rocket.connect(ethersSigner).selfMint(accounts[0]);
     console.log(tx);
     let mintFilter = rocket.filters.Transfer(zeroAddress, accounts[0]);
-    rocket.on(mintFilter, async (from, to, tokenId, event) => { 
+    rocket.on(mintFilter, async (from, to, id, event) => { 
+        tokenId = id;
         console.log('tokenId:' + tokenId);
         var nftImage = $("img.rocket").attr("src");
         var metaJSON = {
@@ -318,6 +385,77 @@ async function airdrop() {
     await tx.wait();
 }
 
+async function stream() {
+    var BN = web3.utils.BN;
+    var gas = web3.utils.toHex(new BN('2000000000')); // 2 Gwei;
+    const cfa = new web3.eth.Contract(cfaABI, addr.cfa);
+    const host = new web3.eth.Contract(hostABI, addr.SuperHost);
+    const nonce = await web3.eth.getTransactionCount(accounts[0], 'latest');
+    const flowRate = "1000000000000000000"; // 1 FUELx
+    const cfaPacked = cfa.methods.createFlow(addr.FUELx, addr.airdrop, flowRate, "0x").encodeABI();
+    const tx = {
+        'from': accounts[0],
+        'to': addr.SuperHost,
+        'gasPrice': gas,
+        'nonce': "" + nonce,
+        'data': host.methods.callAgreement(addr.cfa, cfaPacked, "0x").encodeABI()
+    };
+    console.log(tx);
+    const txHash = await ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [tx],
+    });
+    //console.log(txHash);
+    let transactionReceipt = null
+    while (transactionReceipt == null) { 
+        transactionReceipt = await web3.eth.getTransactionReceipt(txHash);
+        await sleep(500)
+    }
+    // TODO: update metadata with SF sticker
+    var imageURL = await getNFTImage( $(".rocket").attr("src"), "superfluid");
+    $(".rocket").attr("src", imageURL);
+    await updateMetadata(tokenId, imageURL, 6, 0);
+    $("fieldset.current").find("div.actions").remove();
+    $("fieldset.current").find("p").html(`Mission completed. FUEL is now streaming in real-time to your Rocket. Click Next to continue.`);
+}
+
+async function launch(source, destination, level, sticker) {
+    var nftImage = await getNFTImage( $(".rocket").attr("src"), sticker);
+    var uri = await updateMetadata(tokenId, nftImage, level, null);
+    var tx = await rocket.connect(ethersSigner).bridgeDepart(source, destination, rocketAddresses[destination], tokenId, uri, true);
+    console.log(tx);
+    let launchFilter = rocket.filters.Transfer(accounts[0], zeroAddress);
+    return rocket.on(launchFilter, async (from, to, id, event) => { 
+        // launched!
+        $(".rocket").attr("src", nftImage);
+        return;
+    });
+}
+
+async function switchChain(chainId) {
+    await ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: web3.utils.toHex(chainId) }],
+    });
+    if (chainId == 80001) {
+        chain = "mumbai";
+    }
+    if (chainId == 420) {
+        chain = "optigoerli";
+    }
+    if (chainId == 5) {
+        chain = "goerli";
+    }
+    setupChain();
+    $("fieldset.current").find("div.actions").remove();
+    $("fieldset.current").find("p").html(`Waiting for your Rocket to land. Please stand by...`);
+    let landedFilter = rocket.filters.Landed(zeroAddress, accounts[0]);
+    rocket.on(landedFilter, async ( chainId, contractAddress, id, owner, uri, event) => { 
+        tokenId = id;
+        $("fieldset.current").find("p").html(`Mission completed. Your Rocket has landed. Click Next to continue.`);
+    });
+}
+
 function ipfsToHttp(ipfs) {
     var http = "";
     var cid = ipfs.replace("ipfs://", "");
@@ -349,6 +487,33 @@ $( document ).ready(function() {
     $("p").on("click", ".add-token", async function() {
         const symbol = $(this).data("symbol");
         addToken(symbol);
+        return false;
+    });
+
+    $("#stream").click(function(){
+        $(this).text("Fueling...");
+        stream();
+        return false;
+    });
+
+    $(".launch").click(async function(){
+        $(this).text("Launching...");
+        var level = $(this).data("level");
+        var sticker = $(this).data("sticker");
+        var source = $(this).data("source");
+        var destination = $(this).data("destination");
+        await launch(source, destination, level, sticker);
+        // TODO: update message
+        console.log("launched");
+        $("fieldset.current").find("div.actions").find("a.launch").parent().remove();
+        $("fieldset.current").find("div.actions").find("a.switch").parent().show();
+        $("fieldset.current").find("p").html(`Mission completed. Your Rocket is now enroute to Optimisim. Time to switch networks.`);
+        return false;
+    });
+
+    $(".switch").click(async function(){
+        var chainId = $(this).data("chain");
+        await switchChain(chainId);
         return false;
     });
 
