@@ -14,7 +14,7 @@ var chain = "goerli";
 //var chain = "optigoerli";
 var web3, rocket, dropper;
 var accounts = [];
-var provider, ethersSigner;
+var provider, ethersSigner, aave;
 var avatars = [];
 var noNFTAvatars = [
     "https://onramp.quest/images/avatars/glasses.png",
@@ -48,6 +48,7 @@ function setupChain() {
         addr.test = "0x7ea6eA49B0b0Ae9c5db7907d139D9Cd3439862a1";
         addr.SuperHost = "0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9";
         addr.cfa = "0xEd6BcbF6907D4feEEe8a8875543249bEa9D308E8";
+        addr.pool = "0x368EedF3f56ad10b9bC57eed4Dac65B26Bb667f6";
     }
     if (chain == "mumbai") {
         addr.WETH = "";
@@ -75,11 +76,18 @@ function setupChain() {
         rocketABI,
         wssProvider
     );
-    dropper = new ethers.Contract(
-        addr.airdrop,
-        airdropABI,
-        wssProvider
-    );
+    if (chain == "goerli") {
+        dropper = new ethers.Contract(
+            addr.airdrop,
+            airdropABI,
+            wssProvider
+        );
+        aave = new ethers.Contract(
+            addr.pool,
+            poolABI,
+            wssProvider
+        );
+    }
     web3 = AlchemyWeb3.createAlchemyWeb3("wss://"+rpcURL);
 }
 setupChain();
@@ -458,7 +466,8 @@ async function switchChain(chainId) {
     $("fieldset.current").find("p").html(`Waiting for your Rocket to land. Please stand by...`);
     let landedFilter = rocket.filters.Landed();
     rocket.on(landedFilter, async ( chainId, contractAddress, id, owner, uri, event) => { 
-        if (tokenId == id) {
+        console.log("Landed event", tokenId, id, event);
+        if ( tokenId == pareseInt(id) ) {
             $("fieldset.current").find("p").html(`Mission completed. Your Rocket has landed. Click Next to continue.`);
         }
     });
