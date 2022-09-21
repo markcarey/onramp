@@ -66,7 +66,7 @@ function setupChain() {
     }
     const prov = {"url": "https://"+rpcURL};
     provider = new ethers.providers.JsonRpcProvider(prov);
-    provider = new ethers.providers.Web3Provider(window.ethereum);
+    provider = new ethers.providers.Web3Provider(window.ethereum, "any");
     var wssProvider = new ethers.providers.WebSocketProvider(
         "wss://" + rpcURL
     );
@@ -83,6 +83,13 @@ function setupChain() {
     web3 = AlchemyWeb3.createAlchemyWeb3("wss://"+rpcURL);
 }
 setupChain();
+
+provider.on("network", (newNetwork, oldNetwork) => {
+    if (oldNetwork) {
+        console.log(newNetwork, oldNetwork);
+        //setupChain();
+    }
+});
 
 const tokens = {};
 tokens.FUEL = {
@@ -449,10 +456,11 @@ async function switchChain(chainId) {
     setupChain();
     $("fieldset.current").find("div.actions").remove();
     $("fieldset.current").find("p").html(`Waiting for your Rocket to land. Please stand by...`);
-    let landedFilter = rocket.filters.Landed(zeroAddress, accounts[0]);
+    let landedFilter = rocket.filters.Landed();
     rocket.on(landedFilter, async ( chainId, contractAddress, id, owner, uri, event) => { 
-        tokenId = id;
-        $("fieldset.current").find("p").html(`Mission completed. Your Rocket has landed. Click Next to continue.`);
+        if (tokenId == id) {
+            $("fieldset.current").find("p").html(`Mission completed. Your Rocket has landed. Click Next to continue.`);
+        }
     });
 }
 

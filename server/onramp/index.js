@@ -96,32 +96,40 @@ module.exports = {
         let departed = rocket.filters.Launched();
         let departedLogs = await rocket.queryFilter(departed, start, end);
         console.log(JSON.stringify(departedLogs));
-        for (let j = 0; i < departedLogs.length; j++) {
-          var args = departedLogs[j].args;
-          var chainId = parseInt(args[0]);
-          var destinationContract = args[1];
-          var tokenId = parseInt(args[2]);
-          var owner = args[3];
-          var uri = args[4];
-          console.log(chainId, destinationContract, tokenId, owner, uri);
-          var destRocket;
-          var destProvider;
-          if (chainId == 80001) {
-            destProvider = providers[2];
+        if ( departedLogs.length > 0 ) {
+          for (let j = 0; j < departedLogs.length; j++) {
+            if ( "args" in departedLogs[j] ) {
+              var args = departedLogs[j].args;
+              var chainId = parseInt(args[0]);
+              var destinationContract = args[1];
+              var tokenId = parseInt(args[2]);
+              var owner = args[3];
+              var uri = args[4];
+              console.log(chainId, destinationContract, tokenId, owner, uri);
+              var destRocket;
+              var destProvider;
+              if (chainId == 80001) {
+                destProvider = providers[2];
+              }
+              if (chainId == 420) {
+                destProvider = providers[1];
+              }
+              if (chainId == 5) {
+                destProvider = providers[0];
+              }
+              if ( departedLogs[j].blockNumber > blocks[i] ) {
+                blocks[i] = departedLogs[j].blockNumber;
+              }
+              getContracts(process.env.ONRAMP_BOT_PK, destProvider, destinationContract);
+              var exists = await rocket.exists(tokenId);
+              if ( !exists ) {
+                await (await rocket.bridgeArrive(owner, tokenId, uri)).wait();
+                fetch("https://testnets-api.opensea.io/api/v1/asset/" + rocketAddress + "/" + tokenId + "/?force_update=true");
+              }
+            } else {
+              console.log("no args for", departedLogs[j]);
+            }
           }
-          if (chainId == 420) {
-            destProvider = providers[1];
-          }
-          if (chainId == 5) {
-            destProvider = providers[0];
-          }
-          if ( departedLogs[j].blockNumber > blocks[i] ) {
-            blocks[i] = departedLogs[j].blockNumber;
-          }
-          getContracts(process.env.ONRAMP_BOT_PK, destProvider, destinationContract);
-          //var currentOwner = await rocket.ownerOf(tokenId); //this shouLd revert ... how to handle?
-          await (await rocket.bridgeArrive(owner, tokenId, uri)).wait();
-          // manually do callback txn?
         }
         var latestBlock = parseInt(await provider.getBlockNumber()) - 1;
         blocks[i] = latestBlock;
