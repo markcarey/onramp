@@ -124,7 +124,8 @@ module.exports = {
               var exists = await rocket.exists(tokenId);
               if ( !exists ) {
                 await (await rocket.bridgeArrive(owner, tokenId, uri)).wait();
-                fetch("https://testnets-api.opensea.io/api/v1/asset/" + rocketAddress + "/" + tokenId + "/?force_update=true");
+                const response = fetch("https://testnets-api.opensea.io/api/v1/asset/" + destinationContract + "/" + tokenId + "/?force_update=true");
+                await response.json();
               }
             } else {
               console.log("no args for", departedLogs[j]);
