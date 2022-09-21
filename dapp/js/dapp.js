@@ -21,7 +21,7 @@ var noNFTAvatars = [
     "https://onramp.quest/images/avatars/crazy.png",
     "https://onramp.quest/images/avatars/eyeroll.png"
 ];
-var tokenId, propId;
+var tokenId, propId, requestTime;
 
 var rocketAddresses = {
     "1735356532": "0xC2Bd00E6Ba411efd034dcD5Fd8DF6377feFaE702",
@@ -596,6 +596,47 @@ async function vote() {
         $("fieldset.current").find("p").html(`Vote Cast! Mission completed. Click Next to continue.`);
         $("fieldset.current").find("div.actions").remove();
     });
+    await tx.wait();
+}
+
+async function assert(assertion) {
+    var tx = await oracle.connect(ethersSigner).makeAssertion(assertion);
+    console.log(tx);
+    let assertFilter = oracle.filters.Asserted(accounts[0]);
+    oracle.once(assertFilter, async (asserter, timestamp, event) => {
+        requestTime = parseInt(timestamp);
+        console.log("requestTime", requestTime);
+        $("fieldset.current").find("div.actions").find("a#assert").addClass("later").text("Assert");
+        $("fieldset.current").find("p").html(`Your assertion has been submitted to the oracle. Now wait 60 seconds to see if anyone challenges.`);
+        var seconds = 60;
+        var timer = setInterval(function() {
+            if ( seconds >= 0 ) { 
+                $("fieldset.current").find("div.actions").find("a#settle").text(seconds + "s");
+            } else {
+                $("fieldset.current").find("div.actions").find("a#settle").removeClass("later").text("Confirm");
+                clearInterval(timer);
+            }
+            seconds--;
+        }, 1100);
+    });
+    await tx.wait();
+}
+
+async function settle(assertion) {
+    if (!requestTime) {
+        return console.log("requestTime missing");
+    }
+    var tx = await oracle.connect(ethersSigner).settle(assertion, requestTime);
+    await tx.wait();
+    // update metadata with Aave sticker
+    var imageURL = await getNFTImage( $(".rocket").attr("src"), "uma");
+    $(".rocket").attr("src", imageURL);
+    imageURL = await getNFTImage( imageURL, "completed");
+    $(".rocket").attr("src", imageURL);
+    await updateMetadata(tokenId, imageURL, 12, 0);
+    $("fieldset.current").find("#assertion").remove();
+    $("fieldset.current").find("p").html(`Your assertion has been confirmed. You have completed the final onRamp mission!`);
+    $("fieldset.current").find("div.actions").remove();
 }
 
 function ipfsToHttp(ipfs) {
@@ -662,31 +703,49 @@ $( document ).ready(function() {
     $("#approve").click(async function(){
         $(this).text("Approving...");
         await approve();
+        return false;
     });
 
     $("#supply").click(async function(){
         $(this).text("Depositing...");
         await supply();
+        return false;
     });
 
     $("#borrow").click(async function(){
         $(this).text("Borrowing...");
         await borrow();
+        return false;
     });
 
     $("#delegate").click(async function(){
         $(this).text("Delegating...");
         await delegate();
+        return false;
     });
 
     $("#propose").click(async function(){
         $(this).text("Proposing...");
         await propose();
+        return false;
     });
 
     $("#vote").click(async function(){
         $(this).text("Voting...");
         await vote();
+        return false;
+    });
+
+    $("#assert").click(async function(){
+        $(this).text("Asserting...");
+        await assert( $("#assertion").val() );
+        return false;
+    });
+
+    $("#settle").click(async function(){
+        $(this).text("Confirming...");
+        await settle( $("#assertion").val() );
+        return false;
     });
 
 
