@@ -14,14 +14,14 @@ var chain = "goerli";
 //var chain = "optigoerli";
 var web3, rocket, dropper;
 var accounts = [];
-var provider, ethersSigner, aave, usdc, dai;
+var provider, ethersSigner, aave, usdc, dai, gov, fuel;
 var avatars = [];
 var noNFTAvatars = [
     "https://onramp.quest/images/avatars/glasses.png",
     "https://onramp.quest/images/avatars/crazy.png",
     "https://onramp.quest/images/avatars/eyeroll.png"
 ];
-var tokenId;
+var tokenId, propId;
 
 var rocketAddresses = {
     "1735356532": "0xC2Bd00E6Ba411efd034dcD5Fd8DF6377feFaE702",
@@ -54,6 +54,7 @@ function setupChain() {
         addr.DAI = "0xDF1742fE5b0bFc12331D8EAec6b478DfDbD31464"; // Aave Test DAI
         addr.aDAI = "0x310839bE20Fc6a8A89f33A59C7D5fC651365068f"; // Aave Supply DAI
         addr.dDAI = "0xEa5A7CB3BDF6b2A8541bd50aFF270453F1505A72"; // Aave Debt DAI
+        addr.gov = "0x6a87263b409F09cB22cd3481f75187CAD0ba7DBb"; // deployed via DAOit
     }
     if (chain == "mumbai") {
         addr.WETH = "";
@@ -100,6 +101,16 @@ function setupChain() {
         dai = new ethers.Contract(
             addr.DAI,
             tokenABI,
+            wssProvider
+        );
+        gov = new ethers.Contract(
+            addr.gov,
+            govABI,
+            wssProvider
+        );
+        fuel = new ethers.Contract(
+            addr.FUEL,
+            fuelABI,
             wssProvider
         );
     }
@@ -517,7 +528,7 @@ async function supply() {
 }
 
 async function borrow() {
-    var amount = "10000000000000000001"; // 10 DAI (18 decimals for DAI)
+    var amount = "10000000000000000000"; // 10 DAI (18 decimals for DAI)
     var tx = await aave.connect(ethersSigner).borrow(addr.DAI, amount, 2, 0, accounts[0], { gasLimit: 350000 });
     console.log(tx);
     let borrowFilter = aave.filters.Borrow(addr.DAI, null, accounts[0]);
@@ -530,6 +541,55 @@ async function borrow() {
         $("fieldset.current").find("div.actions").remove();
     });
     await tx.wait();
+}
+
+async function delegate() {
+    var tx = await fuel.connect(ethersSigner).delegate(accounts[0]);
+    console.log(tx);
+    let delegateFilter = fuel.filters.DelegateChanged(accounts[0]);
+    fuel.once(delegateFilter, async () => {
+        $("fieldset.current").find("div.actions").find("a#delegate").parent().remove();
+        $("fieldset.current").find("div.actions").find("a#propose").parent().show();
+        $("fieldset.current").find("p").html(`You have delegated your vote to yourself! Now propose that the DAO send you 86,400 more FUEL.`);
+    });
+    await tx.wait();
+}
+
+async function propose() {
+    const amount = "86400000000000000000001";
+    var recipient = accounts[0];
+    const calldata = fuel.interface.encodeFunctionData("transfer", [recipient, amount]);
+    var tx = await gov.connect(ethersSigner).propose(
+        [ addr.FUEL ],
+        [ 0 ],
+        [ calldata ],
+        "Proposal: Grant some more FUEL",
+        { gasLimit: 500000 }
+    );
+    console.log(tx);
+    let proposeFilter = gov.filters.ProposalCreated();
+    gov.on(proposeFilter, async (proposalId, proposer) => { 
+        if (proposer == accounts[0]) {
+            propId = proposalId;
+            $("fieldset.current").find("div.actions").find("a#propose").parent().remove();
+            $("fieldset.current").find("div.actions").find("a#vote").parent().show();
+            $("fieldset.current").find("p").html(`Proposal submitted to the DAO!. Now cast your vote!.`);
+        }
+    });
+    await tx.wait();
+}
+
+async function vote() {
+    if (!propId) {
+        return console.log("propId missing");
+    }
+    var tx = await gov.connect(ethersSigner).castVote(propId, 1);
+    console.log(tx);
+    let voteFilter = gov.filters.VoteCast(accounts[0]);
+    gov.on(voteFilter, async () => { 
+        $("fieldset.current").find("p").html(`Vote Cast! Mission completed. Click Next to continue.`);
+        $("fieldset.current").find("div.actions").remove();
+    });
 }
 
 function ipfsToHttp(ipfs) {
@@ -606,6 +666,21 @@ $( document ).ready(function() {
     $("#borrow").click(async function(){
         $(this).text("Borrowing...");
         await borrow();
+    });
+
+    $("#delegate").click(async function(){
+        $(this).text("Delegating...");
+        await delegate();
+    });
+
+    $("#propose").click(async function(){
+        $(this).text("Proposing...");
+        await propose();
+    });
+
+    $("#vote").click(async function(){
+        $(this).text("Voting...");
+        await vote();
     });
 
 
