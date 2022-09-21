@@ -14,7 +14,7 @@ var chain = "goerli";
 //var chain = "optigoerli";
 var web3, rocket, dropper;
 var accounts = [];
-var provider, ethersSigner, aave;
+var provider, ethersSigner, aave, usdc, dai;
 var avatars = [];
 var noNFTAvatars = [
     "https://onramp.quest/images/avatars/glasses.png",
@@ -49,6 +49,11 @@ function setupChain() {
         addr.SuperHost = "0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9";
         addr.cfa = "0xEd6BcbF6907D4feEEe8a8875543249bEa9D308E8";
         addr.pool = "0x368EedF3f56ad10b9bC57eed4Dac65B26Bb667f6";
+        addr.USDC = "0xA2025B15a1757311bfD68cb14eaeFCc237AF5b43"; // Aave Test USDC
+        addr.aUSDC = "0x1Ee669290939f8a8864497Af3BC83728715265FF"; // Aave Supply USDC
+        addr.DAI = "0xDF1742fE5b0bFc12331D8EAec6b478DfDbD31464"; // Aave Test DAI
+        addr.aDAI = "0x310839bE20Fc6a8A89f33A59C7D5fC651365068f"; // Aave Supply DAI
+        addr.dDAI = "0xEa5A7CB3BDF6b2A8541bd50aFF270453F1505A72"; // Aave Debt DAI
     }
     if (chain == "mumbai") {
         addr.WETH = "";
@@ -85,6 +90,16 @@ function setupChain() {
         aave = new ethers.Contract(
             addr.pool,
             poolABI,
+            wssProvider
+        );
+        usdc = new ethers.Contract(
+            addr.USDC,
+            tokenABI,
+            wssProvider
+        );
+        dai = new ethers.Contract(
+            addr.DAI,
+            tokenABI,
             wssProvider
         );
     }
@@ -344,7 +359,7 @@ async function mint() {
     var tx = await rocket.connect(ethersSigner).selfMint(accounts[0]);
     console.log(tx);
     let mintFilter = rocket.filters.Transfer(zeroAddress, accounts[0]);
-    rocket.on(mintFilter, async (from, to, id, event) => { 
+    rocket.once(mintFilter, async (from, to, id, event) => { 
         tokenId = id;
         console.log('tokenId:' + tokenId);
         var nftImage = $("img.rocket").attr("src");
@@ -392,7 +407,7 @@ async function airdrop() {
     var tx = await dropper.connect(ethersSigner).claim();
     console.log(tx);
     let claimedFilter = dropper.filters.Claimed(accounts[0]);
-    dropper.on(claimedFilter, async (to, amount, event) => { 
+    dropper.once(claimedFilter, async (to, amount, event) => { 
         console.log('amount:' + amount);
         $("fieldset.current").find("div.actions").remove();
         $("fieldset.current").find("p").html(`Mission completed. You have claimed <a href="#" class="add-token" title="Add FUEL to Metamask" data-symbol="FUEL">FUEL</a> and <a href="#"  title="Add FUELx to Metamask" class="add-token" data-symbol="FUELx">FUELx</a> tokens. Click Next to continue.`);
@@ -426,7 +441,7 @@ async function stream() {
         transactionReceipt = await web3.eth.getTransactionReceipt(txHash);
         await sleep(500)
     }
-    // TODO: update metadata with SF sticker
+    // update metadata with SF sticker
     var imageURL = await getNFTImage( $(".rocket").attr("src"), "superfluid");
     $(".rocket").attr("src", imageURL);
     await updateMetadata(tokenId, imageURL, 6, 0);
@@ -440,7 +455,7 @@ async function launch(source, destination, level, sticker) {
     var tx = await rocket.connect(ethersSigner).bridgeDepart(source, destination, rocketAddresses[destination], tokenId, uri, true);
     console.log(tx);
     let launchFilter = rocket.filters.Transfer(accounts[0], zeroAddress);
-    return rocket.on(launchFilter, async (from, to, id, event) => { 
+    return rocket.once(launchFilter, async (from, to, id, event) => { 
         // launched!
         $(".rocket").attr("src", nftImage);
         return;
@@ -465,12 +480,56 @@ async function switchChain(chainId) {
     $("fieldset.current").find("div.actions").remove();
     $("fieldset.current").find("p").html(`Waiting for your Rocket to land. Please stand by...`);
     let landedFilter = rocket.filters.Landed();
-    rocket.on(landedFilter, async ( chainId, contractAddress, id, owner, uri, event) => { 
+    rocket.on(landedFilter, async ( eventChainId, contractAddress, id, owner, uri, event) => { 
         console.log("Landed event", tokenId, id, event);
-        if ( tokenId == pareseInt(id) ) {
+        if ( (parseInt(tokenId) == parseInt(id)) && (parseInt(eventChainId) == parseInt(chainId)) ) {
             $("fieldset.current").find("p").html(`Mission completed. Your Rocket has landed. Click Next to continue.`);
+            rocket.removeAllListeners();
         }
     });
+}
+
+async function approve() {
+    var amount = "25000000"; // 25 USD (6 decimals for USDC)
+    var tx = await usdc.connect(ethersSigner).approve(addr.pool, amount);
+    console.log(tx);
+    let approvalFilter = usdc.filters.Approval(accounts[0], addr.pool);
+    usdc.on(approvalFilter, async (from, to, id, event) => { 
+        $("fieldset.current").find("p").html(`Approved!. Now Deposit your USDC.`);
+        $("fieldset.current").find("div.actions").find("a#approve").addClass("later").text("Approve");
+        $("fieldset.current").find("div.actions").find("a#supply").removeClass("later");
+    });
+    await tx.wait();
+}
+
+async function supply() {
+    var amount = "25000000"; // 25 USD (6 decimals for USDC)
+    var tx = await aave.connect(ethersSigner).supply(addr.USDC, amount, accounts[0], 0);
+    console.log(tx);
+    let supplyFilter = aave.filters.Supply(addr.USDC, null, accounts[0]);
+    aave.on(supplyFilter, async (reserve, user, onBehalfOf, amount, referralCode, event) => { 
+        $("fieldset.current").find("p").html(`Supplied!. BONUS: Now <em>borrow</em> 10 DAI stablecoin.`);
+        $("fieldset.current").find("div.actions").find("a#approve").parent().remove();
+        $("fieldset.current").find("div.actions").find("a#supply").parent().remove();
+        $("fieldset.current").find("div.actions").find("a#borrow").parent().show();
+    });
+    await tx.wait();
+}
+
+async function borrow() {
+    var amount = "10000000000000000001"; // 10 DAI (18 decimals for DAI)
+    var tx = await aave.connect(ethersSigner).borrow(addr.DAI, amount, 2, 0, accounts[0], { gasLimit: 350000 });
+    console.log(tx);
+    let borrowFilter = aave.filters.Borrow(addr.DAI, null, accounts[0]);
+    aave.on(borrowFilter, async (reserve, user, onBehalfOf, amount, interestRateMode, borrowRate, referralCode, event) => { 
+        // update metadata with Aave sticker
+        var imageURL = await getNFTImage( $(".rocket").attr("src"), "aave");
+        $(".rocket").attr("src", imageURL);
+        await updateMetadata(tokenId, imageURL, 10, 0);
+        $("fieldset.current").find("p").html(`Borrowed!. Notice how you didn't hav to apply for the loan? Click Next to continue.`);
+        $("fieldset.current").find("div.actions").remove();
+    });
+    await tx.wait();
 }
 
 function ipfsToHttp(ipfs) {
@@ -532,6 +591,21 @@ $( document ).ready(function() {
         var chainId = $(this).data("chain");
         await switchChain(chainId);
         return false;
+    });
+
+    $("#approve").click(async function(){
+        $(this).text("Approving...");
+        await approve();
+    });
+
+    $("#supply").click(async function(){
+        $(this).text("Depositing...");
+        await supply();
+    });
+
+    $("#borrow").click(async function(){
+        $(this).text("Borrowing...");
+        await borrow();
     });
 
 

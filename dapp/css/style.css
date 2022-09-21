@@ -551,6 +551,12 @@ p.more {
     color: #000;
     text-decoration: none; }  
 
+.actions ul li a.later {
+  background: #f8f8f8;
+  color: #999;
+  cursor: not-allowed;
+}
+
 @media screen and (max-width: 992px) {
   .container {
     width: calc(100% - 40px);
