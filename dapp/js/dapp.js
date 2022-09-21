@@ -14,7 +14,7 @@ var chain = "goerli";
 //var chain = "optigoerli";
 var web3, rocket, dropper;
 var accounts = [];
-var provider, ethersSigner, aave, usdc, dai, gov, fuel;
+var provider, ethersSigner, aave, usdc, dai, gov, fuel, oracle;
 var avatars = [];
 var noNFTAvatars = [
     "https://onramp.quest/images/avatars/glasses.png",
@@ -55,6 +55,7 @@ function setupChain() {
         addr.aDAI = "0x310839bE20Fc6a8A89f33A59C7D5fC651365068f"; // Aave Supply DAI
         addr.dDAI = "0xEa5A7CB3BDF6b2A8541bd50aFF270453F1505A72"; // Aave Debt DAI
         addr.gov = "0x6a87263b409F09cB22cd3481f75187CAD0ba7DBb"; // deployed via DAOit
+        addr.oracle = "0x346b90E2B50192280547D71D0D21932B05Bf2ce3"; // UMA powered Assert oracle
     }
     if (chain == "mumbai") {
         addr.WETH = "";
@@ -111,6 +112,11 @@ function setupChain() {
         fuel = new ethers.Contract(
             addr.FUEL,
             fuelABI,
+            wssProvider
+        );
+        oracle = new ethers.Contract(
+            addr.oracle,
+            oracleABI,
             wssProvider
         );
     }
