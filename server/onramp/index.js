@@ -123,9 +123,12 @@ module.exports = {
               getContracts(process.env.ONRAMP_BOT_PK, destProvider, destinationContract);
               var exists = await rocket.exists(tokenId);
               if ( !exists ) {
+                console.log("destinationContract", destinationContract);
                 await (await rocket.bridgeArrive(owner, tokenId, uri)).wait();
-                const response = fetch("https://testnets-api.opensea.io/api/v1/asset/" + destinationContract + "/" + tokenId + "/?force_update=true");
-                await response.json();
+                const osURL = "https://testnets-api.opensea.io/api/v1/asset/" + destinationContract + "/" + tokenId + "/?force_update=true";
+                console.log("osURL", osURL);
+                const opensea = fetch(osURL);
+                //await opensea.json();
               }
             } else {
               console.log("no args for", departedLogs[j]);
@@ -151,6 +154,9 @@ module.exports = {
       chain = 0;
     }
     var tokenId = req.query.id;
+    if (tokenId == "undefined") {
+      return res.json({"error": "missing token id"});
+    }
     var uri = req.query.uri;
     var rocketAddress = rockets[chain];
     var provider = providers[chain];
