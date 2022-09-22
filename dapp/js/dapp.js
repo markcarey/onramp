@@ -348,8 +348,14 @@ async function connect(){
         await provider.send("eth_requestAccounts", []);
         ethersSigner = provider.getSigner();
         accounts[0] = await ethersSigner.getAddress();
-        //console.log("Account:", await ethersSigner.getAddress()); 
         console.log(accounts);
+        const userChain = await ethereum.request({ method: 'eth_chainId' });
+        if (web3.utils.hexToNumber(userChain) != 5) {
+            await ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: web3.utils.toHex(5) }],
+            });
+        }
         $("#connect").hide();
         $("fieldset.current").find("p").text("Mission completed. Hit Next to continue, where you can use a credit card to fund your wallet (simulated for demo).");
         await getAvatars("ethereum", "");
