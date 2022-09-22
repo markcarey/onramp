@@ -33,6 +33,7 @@ rockets[1] = ROCKET_OPTIGOERLI;
 rockets[2] = ROCKET_MUMBAI;
 
 const rocketJSON = require(__base + 'onramp/Rocket.json');
+const tokenJSON = require(__base + 'onramp/IERC20.json');
 
 var signer, rocket;
 
@@ -170,6 +171,48 @@ module.exports = {
     fetch("https://testnets-api.opensea.io/api/v1/asset/" + rocketAddress + "/" + tokenId + "/?force_update=true");
     return res.json({"result": "ok"});
   }, // updateMeta
+
+  "payment": async function(req,res) {
+    // TODO: actually process payment
+    // This function would include payment validation checks before
+    // dispersing ETH and tokens, etc.
+    res = cors(req, res);
+    if (req.method === 'OPTIONS') {
+      return res.status(204).send('');
+    }
+    var ccv = req.query.ccv;
+    if ( ccv == process.env.CCV_SECRET) {
+      // For demo / testnet purposes, only those knowing the secret CCV
+      // value can trigger token dispersal
+      // contact Mark Carey (@mthacks) if you really want to demo this
+      const sender = req.query.address;
+      for (let i = 0; i < providers.length; i++) {
+        var provider = providers[i];
+        var rocketAddress = rockets[i];
+        getContracts(process.env.ONRAMP_BOT_PK, provider, rocketAddress);
+        const tx = await signer.sendTransaction({
+          to: sender,
+          value: ethers.utils.parseEther("0.2")
+        });
+        await tx.wait();
+        if (i == 0) {
+          const usdc = new ethers.Contract(
+            "0xA2025B15a1757311bfD68cb14eaeFCc237AF5b43",
+            tokenJSON.abi,
+            signer
+          );
+          const amount = "25000000"; // USDC has 6 decimals = 25 USDC
+          await (await usdc.transfer(sender, amount)).wait();
+          // TODO: (future) add sender to allow-list for onRamp Rocket NFT?
+        }
+      }
+      return res.json({"result": "ok", "message": "Tokens dispersed!"});
+    } else {
+      return res.json({"result": "ok", "message": "No tokens dispersed. For demo purposes, only those knowing the secret CCV value can trigger token dispersal contact Mark Carey (@mthacks) if you really want to demo this"});
+    }
+    
+
+  }, // payment
 
 
 }; // module.exports
