@@ -44,6 +44,8 @@ Users learn that their FUEL tokens can be used to particpate in the onRamp DAO. 
 ## Mission 12: Use an optimistic Oracle
 In the final mission, users are asked to perform an off-chain action: to share their onRamp experience publicly on social media. They then learn how an on-chain optimistic oracle (powered by UMA) can be used to validate off-chain actions and data. They submit an assertion to the UMA-powered oracle that they have performed the action. Then ensues a challenge period duing which others can refute their assertion (60 seconds for the demo). If there are no challengers, they can Confirm their assertion and earn a badge of completion with is added to their NFT image and metadata.
 
+![Mission 12 Completed](https://onramp.quest/images/example.png)
+
 # How it Works
 
 
