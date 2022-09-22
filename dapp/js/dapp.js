@@ -9,6 +9,7 @@ rpcURLs.optigoerli = "opt-goerli.g.alchemy.com/v2/jb4AhFhyR0X_ChVX5J1f0oWQ6GvJqL
 
 const nftPortAPI = "https://api.nftport.xyz/v0/accounts/";
 const onrampAPI = "https://us-central1-slash-translate.cloudfunctions.net/onrampUpdateMeta";
+const tallyURL = "https://www.tally.xyz/governance/eip155:5:0x6a87263b409F09cB22cd3481f75187CAD0ba7DBb/proposal/";
 
 var chain = "goerli";
 //var chain = "optigoerli";
@@ -414,7 +415,7 @@ async function mint() {
             var result = await response.json();
             console.log(result);
             $("fieldset.current").find("div.actions").remove();
-            $("fieldset.current").find("p").html(`Mission completed. Your Rocket NFT has been minted. <a target="_blank" href="https://testnets.opensea.io/assets/goerli/${addr.rocket}/${tokenId}">View it on OpenSea</a>. Click Next to continue.`);
+            $("fieldset.current").find("p").html(`Mission completed. Your Rocket NFT has been minted. <a target="_blank" href="https://testnets.opensea.io/assets/goerli/${addr.rocket}/${tokenId}">View it on OpenSea</a>  <i class="zmdi zmdi-open-in-new"></i>. Click Next to continue.`);
         }
     });
     await tx.wait();
@@ -463,7 +464,7 @@ async function stream() {
     $(".rocket").attr("src", imageURL);
     await updateMetadata(tokenId, imageURL, 6, 0);
     $("fieldset.current").find("div.actions").remove();
-    $("fieldset.current").find("p").html(`Mission completed. FUEL is now streaming in real-time to your Rocket. Click Next to continue.`);
+    $("fieldset.current").find("p").html(`Mission completed. FUEL is now streaming in real-time to your Rocket. <a target="_blank" href="https://v1.superfluid.finance/dashboard">View it on Superfluid</a> <i class="zmdi zmdi-open-in-new"></i>. Click Next to continue.`);
 }
 
 async function launch(source, destination, level, sticker) {
@@ -493,6 +494,10 @@ async function switchChain(chainId) {
     if (chainId == 5) {
         chain = "goerli";
     }
+    var osChain = chain;
+    if (chain == "optigoerli") {
+        osChain = "optimism-goerli";
+    }
     setupChain();
     $("fieldset.current").find("div.actions").remove();
     $("fieldset.current").find("p").html(`Waiting for your Rocket to land. Please stand by...`);
@@ -500,7 +505,7 @@ async function switchChain(chainId) {
     rocket.on(landedFilter, async ( eventChainId, contractAddress, id, owner, uri, event) => { 
         console.log("Landed event", tokenId, id, event);
         if ( (parseInt(tokenId) == parseInt(id)) && (parseInt(eventChainId) == parseInt(chainId)) ) {
-            $("fieldset.current").find("p").html(`Mission completed. Your Rocket has landed. Click Next to continue.`);
+            $("fieldset.current").find("p").html(`Mission completed. Your Rocket has landed. <a target="_blank" href="https://testnets.opensea.io/assets/${osChain}/${addr.rocket}/${tokenId}">View it on OpenSea</a> <i class="zmdi zmdi-open-in-new"></i>. Click Next to continue.`);
             rocket.removeAllListeners();
         }
     });
@@ -543,7 +548,7 @@ async function borrow() {
         var imageURL = await getNFTImage( $(".rocket").attr("src"), "aave");
         $(".rocket").attr("src", imageURL);
         await updateMetadata(tokenId, imageURL, 10, 0);
-        $("fieldset.current").find("p").html(`Borrowed!. Notice how you didn't hav to apply for the loan? Click Next to continue.`);
+        $("fieldset.current").find("p").html(`Borrowed!. Notice how you didn't hav to apply for the loan? <a target="_blank" href="https://staging.aave.com/">View your deposits and borrows on Aave</a> <i class="zmdi zmdi-open-in-new"></i>. Click Next to continue.`);
         $("fieldset.current").find("div.actions").remove();
     });
     await tx.wait();
@@ -562,7 +567,7 @@ async function delegate() {
 }
 
 async function propose() {
-    const amount = "86400000000000000000001";
+    const amount = "86400000000000000000002";
     var recipient = accounts[0];
     const calldata = fuel.interface.encodeFunctionData("transfer", [recipient, amount]);
     var tx = await gov.connect(ethersSigner).propose(
@@ -593,7 +598,7 @@ async function vote() {
     console.log(tx);
     let voteFilter = gov.filters.VoteCast(accounts[0]);
     gov.on(voteFilter, async () => { 
-        $("fieldset.current").find("p").html(`Vote Cast! Mission completed. Click Next to continue.`);
+        $("fieldset.current").find("p").html(`Vote Cast! Mission completed. You can <a href="${tallyURL}${propId}" target="_blank">view your proposal on Tally</a> <i class="zmdi zmdi-open-in-new"></i>. Click Next to continue.`);
         $("fieldset.current").find("div.actions").remove();
     });
     await tx.wait();
@@ -635,7 +640,7 @@ async function settle(assertion) {
     $(".rocket").attr("src", imageURL);
     await updateMetadata(tokenId, imageURL, 12, 0);
     $("fieldset.current").find("#assertion").remove();
-    $("fieldset.current").find("p").html(`Your assertion has been confirmed. You have completed the final onRamp mission!`);
+    $("fieldset.current").find("p").html(`Your assertion has been confirmed. <a target="_blank" href="https://testnet.oracle.umaproject.org/request?transactionHash=${tx.hash}&chainId=5&oracleType=OptimisticV2&eventIndex=0">View it on UMA</a> <i class="zmdi zmdi-open-in-new"></i>. You have completed the final onRamp mission!`);
     $("fieldset.current").find("div.actions").remove();
 }
 
