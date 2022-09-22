@@ -164,6 +164,41 @@ tokens.DAI = {
     "image": "https://onramp.quest/images/dai.svg"
 }
 
+const chains = {};
+chains["5"] = {
+    "chainId":  web3.utils.toHex(5),
+    "chainName": "Goerli Test Network",
+    "nativeCurrency": {
+        "name": "Goerli ETH",
+        "symbol": "GoerliETH",
+        "decimals": 18
+    },
+    "rpcUrls": ["https://goerli.infura.io/v3/"],
+    "blockExplorerUrls": ["https://goerli.etherscan.io"],
+}
+chains["420"] = {
+    "chainId":  web3.utils.toHex(420),
+    "chainName": "Optimism Goerli",
+    "nativeCurrency": {
+        "name": "KOR",
+        "symbol": "KOR",
+        "decimals": 18
+    },
+    "rpcUrls": ["https://goerli.optimism.io"],
+    "blockExplorerUrls": ["https://blockscout.com/optimism/goerli"],
+}
+chains["80001"] = {
+    "chainId":  web3.utils.toHex(80001),
+    "chainName": "Polygon Mumbai",
+    "nativeCurrency": {
+        "name": "MATIC",
+        "symbol": "MATIC",
+        "decimals": 18
+    },
+    "rpcUrls": ["https://matic-mumbai.chainstacklabs.com"],
+    "blockExplorerUrls": ["https://mumbai.polygonscan.com/"],
+}
+
 async function addToken(symbol) {
     var token = tokens[symbol];
     console.log(token);
@@ -513,10 +548,28 @@ async function launch(source, destination, level, sticker) {
 }
 
 async function switchChain(chainId) {
-    await ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: web3.utils.toHex(chainId) }],
-    });
+    try {
+        await ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: web3.utils.toHex(chainId) }],
+        });
+    } catch (switchError) {
+        // This error code indicates that the chain has not been added to MetaMask.
+        if (switchError.code === 4902) {
+            try {
+                await ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [
+                        chains[chainId]
+                    ],
+                });
+                switchChain(chainId);
+            } catch (addError) {
+                // handle "add" error
+            }
+        }
+        // handle other "switch" errors
+    }
     if (chainId == 80001) {
         chain = "mumbai";
     }
