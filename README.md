@@ -1,4 +1,4 @@
-# onRamp Quest
+# 🚀 onRamp Quest
 
 onRamp Quest is an education game that sends particants on missions to learn about Ethereum. 
 
