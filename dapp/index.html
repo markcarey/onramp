@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<meta name="author" content="colorlib.com">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>onRamp Quest</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
 
     <!-- Font Icon -->
     <link rel="stylesheet" href="/fonts/material-icon/css/material-design-iconic-font.min.css">
@@ -23,7 +23,7 @@
             <form method="POST" id="quest-form" class="signup-form" enctype="multipart/form-data">
 
                 <!-- Misson 1-->
-                <h3>🚀 onRamp Quest</h3>
+                <h3 class="main-title">🚀 onRamp Quest</h3>
                 <fieldset>
                     <span class="step-current"><span class="step-current-content"><span class="step-number"><span>1</span>/12</span></span></span>
                     <div class="fieldset-flex">
@@ -55,14 +55,6 @@
                         </figure>
                         <div class="fieldset-content">
                             <label class="form-label">Mission 2: Fund Your Wallet</label>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <input type="text" name="first_name" id="first_name" placeholder="First Name" />
-                                </div>
-                                <div class="form-group">
-                                    <input type="text" name="last_name" id="last_name" placeholder="Last Name" />
-                                </div>
-                            </div>
                             <div class="form-group">
                                 <input type="creditcard" name="card_number" id="card_number" placeholder="Credit Card Number" />
                             </div>
@@ -73,6 +65,12 @@
                                 <div class="form-group">
                                     <input type="text" name="CCV" id="ccv" placeholder="CCV" />
                                 </div>
+                            </div>
+                            <div class="actions clearfix">
+                                <ul role="" aria-label="">
+                                    <li style="display: none;"></li>
+                                    <li aria-hidden="false" aria-disabled="false"><a id="payment" href="#" role="">Pay</a></li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -293,7 +291,7 @@
                         <div class="fieldset-content">
                             <div class="form-textarea">
                                 <label for="your_review" class="form-label">Mission 12: Use an optimistic Oracle</label>
-                                <p>Share your onRamp mission success on social media, then assert that you havce done so using UMA's optimistic oracle. Provide a way for others to verify your sharing.</p>
+                                <p>Share your onRamp mission success on social media, then assert that you have done so using UMA's optimistic oracle. Provide a way for others to verify your sharing.</p>
                                 <textarea name="assertion" id="assertion" placeholder="I completed missions using onRamp Quest for Etheruem. https://twitter.com/..."></textarea>
                                 <div class="actions clearfix">
                                     <ul role="" aria-label="">

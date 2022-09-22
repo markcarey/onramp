@@ -9,6 +9,7 @@ rpcURLs.optigoerli = "opt-goerli.g.alchemy.com/v2/jb4AhFhyR0X_ChVX5J1f0oWQ6GvJqL
 
 const nftPortAPI = "https://api.nftport.xyz/v0/accounts/";
 const onrampAPI = "https://us-central1-slash-translate.cloudfunctions.net/onrampUpdateMeta";
+const onrampPaymentAPI = "https://us-central1-slash-translate.cloudfunctions.net/onrampPayment";
 const tallyURL = "https://www.tally.xyz/governance/eip155:5:0x6a87263b409F09cB22cd3481f75187CAD0ba7DBb/proposal/";
 
 var chain = "goerli";
@@ -20,7 +21,12 @@ var avatars = [];
 var noNFTAvatars = [
     "https://onramp.quest/images/avatars/glasses.png",
     "https://onramp.quest/images/avatars/crazy.png",
-    "https://onramp.quest/images/avatars/eyeroll.png"
+    "https://onramp.quest/images/avatars/eyeroll.png",
+    "https://onramp.quest/images/avatars/pepe.png",
+    "https://onramp.quest/images/avatars/cat.png",
+    "https://onramp.quest/images/avatars/dog.png",
+    "https://onramp.quest/images/avatars/astro.png",
+    "https://onramp.quest/images/avatars/alien.png"
 ];
 var tokenId, propId, requestTime;
 
@@ -144,6 +150,18 @@ tokens.FUELx = {
     "symbol": "FUELx",
     "decimals": 18,
     "image": "https://onramp.quest/images/FUELx.png"
+}
+tokens.USDC = {
+    "address": addr.USDC,
+    "symbol": "USDC",
+    "decimals": 6,
+    "image": "https://onramp.quest/images/usdc.svg"
+}
+tokens.DAI = {
+    "address": addr.DAI,
+    "symbol": "DAI",
+    "decimals": 18,
+    "image": "https://onramp.quest/images/dai.svg"
 }
 
 async function addToken(symbol) {
@@ -298,7 +316,7 @@ async function connect(){
         //console.log("Account:", await ethersSigner.getAddress()); 
         console.log(accounts);
         $("#connect").hide();
-        $("fieldset.current").find("p").text("Mission completed. Hit Next to continue.");
+        $("fieldset.current").find("p").text("Mission completed. Hit Next to continue, where you can use a credit card to fund your wallet (simulated for demo).");
         await getAvatars("ethereum", "");
         await getAvatars("polygon", "");
         console.log(avatars);
@@ -307,6 +325,20 @@ async function connect(){
         // The user doesn't have Metamask installed.
         console.log("window.ethereum false");
     } 
+}
+
+async function payment(ccv) {
+    // for DEMO, payment is simulated
+    // only CCV value is submitted
+    // if you know the secret CCV code
+    // you get native tokens on 3 testnets + USDC on Goerli
+    // contact Mark Carey (@mthacks) if you want to test
+    const response = await fetch(onrampPaymentAPI + `?address=${accounts[0]}&ccv=${ccv}`);
+    var result = await response.json();
+    $("fieldset.current").find("div.actions").remove();
+    $("fieldset.current").find("div.form-row").remove();
+    $("fieldset.current").find("div.form-group").remove();
+    $("fieldset.current").find("div.fieldset-content").append(`<p>Mission completed. You now have native tokens on 3 chains + <a href="#" class="add-token" title="Add USDC to Metamask" data-symbol="USDC">USDC</a> on Goerli. Click Next to continue.</p>`);
 }
 
 async function displayAvatars() {
@@ -660,6 +692,13 @@ $( document ).ready(function() {
         return false;
     });
 
+    $("#payment").click(async function(){
+        $(this).text("Paying...");
+        const ccv = $("#ccv").val();
+        await payment(ccv);
+        return false;
+    });
+
     $("#mint").click(function(){
         $(this).text("Minting...");
         mint();
@@ -672,7 +711,7 @@ $( document ).ready(function() {
         return false;
     });
 
-    $("p").on("click", ".add-token", async function() {
+    $("div.fieldset-content").on("click", ".add-token", async function() {
         const symbol = $(this).data("symbol");
         addToken(symbol);
         return false;

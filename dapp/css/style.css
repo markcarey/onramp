@@ -557,6 +557,9 @@ p.more {
   cursor: not-allowed;
 }
 
+h3.main-title {
+  font-size: 2em; }
+
 @media screen and (max-width: 992px) {
   .container {
     width: calc(100% - 40px);
