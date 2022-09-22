@@ -162,6 +162,10 @@ module.exports = {
     var provider = providers[chain];
     console.log(rocketAddress, provider, uri, tokenId);
     getContracts(process.env.ONRAMP_BOT_PK, provider, rocketAddress);
+    var exists = await rocket.exists(tokenId);
+    if ( !exists ) {
+      return res.json({"error": `tokenId ${tokenId} does not exist on chain ${chain}`});
+    }
     await (await rocket.setTokenURI(tokenId, uri)).wait();
     fetch("https://testnets-api.opensea.io/api/v1/asset/" + rocketAddress + "/" + tokenId + "/?force_update=true");
     return res.json({"result": "ok"});
