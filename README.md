@@ -47,7 +47,28 @@ In the final mission, users are asked to perform an off-chain action: to share t
 ![Mission 12 Completed](https://onramp.quest/images/example.png)
 
 # How it Works
+onRamp Quest is a decentralizied application that can be found at https://onramp.quest, hosted on Skynet decentralized storage (https://04047muedf04avad7gsjpabrifbstbpdtmg1mb1lto0e3thbo7404og.skynetfree.net/). User can compete all 12 missions without leaving the onRamp dapp UI, and interface with various protocols and contracts via javascript functions and Metamask.
 
+### Contracts
+Three contract were written for onRamp Quest, written in Solidity, and deployed using Hardhat:
+
+1. `Rocket.sol` - This is a cross-chain NFT contract that supports bridging to other networks via the Connext protocol, and also through a centralized/trusted bridge custom-built for onRamp. This contract was deployed to 3 chanins: Goerli, Optimism Goerli, and Mumbai and supports bridging among these. When a user *launches* their Rocket towards a new chain, the NFT is burned on the current chain, and then minted at the destination chain, using the same `tokenId` but with evolved metadata and image to reflect the newly completed mission. Bridging via Connext includes options for both authenticated bridging (slow) and non-authenitcated (fast) for demo/testing purposes. Non-Connext bridging is always authenticated via OpenZeppelin `AccessControl` roles. The NFT contract supports updating of the metadata `tokenURI` by trusted addresses. The metadata and image gets updated in the contract when user complete various missions, earning stickers and badges along the way.
+
+2. `Airdropper.sol` - Used in Mission 5, this contract powers simple airdrops of 1 or 2 ERC20 tokens to current holders of a specific NFT collection. The deployed contract drops 86400 `FUEL` and 86400 `FUELx` to holders of onRamp Rockets. While the contract as written is well-suited to the current educational purposes of onRamp, enhancements could make it into a more general purpose contract, including support for multiple NFT collections, 1-n ERC20 tokens, enforcing one drop per tokenId, etc.
+
+3. `Assert.sol` - Used in Mission 12, this is an *optimistic assertion oracle*, powered by the UMA protocol. The contract enables someone to make any assertion that they claim to be true, and submit it on-chain. The assertion is then optimistically assumed to be true unlesses challenged during the challenge period. After the challenge period passes, the user can confirm on chain that the oracle has deemed the assertion to be true. Using the UMA protocol, the `makeAssertion` function calls both `requestPrice` and `proposePrice`on the UMA oracle contract, thus making the assertion and claiming it is true, respectively. One way to look at this is asking a question and then immediately submitting your own answer to that question and waiting to see if anyone disagrees. In Mission 12, the user is asked to share their onRamp experience on social media and then assert to the oracle that they have done so, along with some means for others to verify this. In this way, we are using an optimistic oracle to incentivize off-chain actions.
+
+Five additional contracts were deployed for use as part of onRamp Quest, using the web-based DAO creation tool DAOit (https://daoit.xyz). The relevant contract include a voting-enabled ERC20 token (`FUEL`), a Superfluid-upgraded version of that token (`FUELx`), an OpenZeppelin Governor, and OpenZeppelin Timelock (Treasury). Tokens deployed using these contracts were then sent to the `Airdropper` contract described above, which airdrops them to onRamp users in Mission 5. The tokens are then used in Mission 6 to stream tokens back the the `Airdropper` contract by interacting directly with the Superfluid protocol. Later, in Mission 11, onRamp users interact with these deployed contracts for completing DAO governance actions. **While I am the creator of the DAOit tool, it was used for onRamp as a 3rd-party tool/library and the source code for these contracts is not part of this repo and does NOT form part of the hackathon submission to ETHOnline.**
+
+### Dapp
+The onRamp dapp is compromised of HTML, CSS, and Javascript that interacts with contracts mentioned above, as well as other contracts deployed by various protocols from Superfluid, Connext, Aave, and UMA. The dapp primarily uses `ethersJS` and Metamask to interact with these contracts and to switch between Goerli, Optimism Goerli, and Mumbai networks. Rather than send users to Aave and Superfluid dapps, onRamp keeps things simple for users, and interacts directly with those protocols behind the scenes. Users only have to connect their wallet once, to onRamp, and can then mint NFTs, claim aidrops, stream tokens, do multi-chain bridging, supply and borrow tokens, conduct DAO governance, and interact with an oracle ... all from the same dapp interface.
+
+The Dapp uses the **NFTPort** API to retrieve lists of NFTs owned by the connected wallet on Etheruem and/or Polygon. If found, these are displayed to the user in Mission 3 as options for thewir avatar.
+
+The dapp also interfaces with some onRamp server-based APIs for various functions, discussed in more detail below.
+
+## Server Functions
+Hosted on Google Firebase, onRamp uses 3 serverless functions.
 
 # Links
 App: https://onramp.quest
