@@ -851,5 +851,11 @@ $( document ).ready(function() {
         return false;
     });
 
+    $(document).bind('keydown', 'ctrl+o', function(){
+        // temp convenience function to fill payment form during demos
+        $("#card_number").val("4242424242424242");
+        $("#expiry").val("04/20");
+        $("#ccv").val("123");
+    });
 
 });
