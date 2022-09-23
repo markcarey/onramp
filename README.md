@@ -69,6 +69,8 @@ Rocket NFT Metadata JSON and images, which change as users complete missions, ar
 
 The dapp also interfaces with some onRamp server-based APIs for various functions, discussed in more detail below.
 
+The HTML and CSS for the Dapp were modified from the ![Colorlib Wizard 18](https://colorlib.com/wp/template/colorlib-wizard-18/) template set, used in accordance with a *CC by 3.0* Creative Commons license.
+
 ## Server Functions
 Hosted on Google Firebase, onRamp uses 3 serverless functions.
 
